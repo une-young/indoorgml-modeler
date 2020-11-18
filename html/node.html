@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link href="../vendor/Semantic-UI/semantic.min.css" rel="stylesheet" />
+    <script src="../vendor/jquery.js"></script>
+    <script src="../vendor/Semantic-UI/semantic.min.js"></script>
+    <script src="../vendor/vue.js"></script>
+    <link rel="stylesheet" href="../vendor/SlickGrid-master/slick.grid.css" type="text/css" />
+    <link rel="stylesheet" href="../vendor/SlickGrid-master/css/smoothness/jquery-ui-1.8.16.custom.css"
+        type="text/css" />
+    <link rel="stylesheet" href="../vendor/SlickGrid-master/examples/examples.css" type="text/css" />
+    <style>
+        img.clickableImage {
+            cursor: pointer;
+        }
+
+        /* Give the content some space */
+        body {
+            padding: 15px;
+        }
+
+        /* Fix footer position to bottom */
+        .footer {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: white;
+            border-top: 1px solid silver;
+        }
+
+        /* Define a 128x128 preview square */
+        .preview {
+            position: relative;
+            display: inline-block;
+            width: 128px;
+            height: 128px;
+            font-size: 0px;
+            background: url("../images/transparent.png");
+            overflow: hidden;
+        }
+
+        .preview span {
+            display: inline-block;
+            width: 50%;
+            height: 100%;
+        }
+
+        .preview img {
+            display: inline-block;
+            max-width: 100%;
+            max-height: 100%;
+            /* Center element */
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-50%);
+        }
+
+        /* Fine tune input field sizes */
+        .ui.form .field .ui.label {
+            width: 60px;
+        }
+
+        .ui.form .field .ui.input {
+            width: 128px;
+        }
+
+        .ui.form .field .ui.input input {
+            width: 60px;
+        }
+
+        .cell-title {
+            font-weight: bold;
+        }
+
+        .cell-effort-driven {
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body onload="initialize();">
+    <div id="app">
+        <!--      node를 선택했을때의 block    -->
+        <h2>Topology properties</h2>
+        <div class="ui padded grid">
+            <div class="sixteen wide centered column">
+                <div class="ui three column grid">
+                    <div class="row">
+                        <div class="column">
+                            <h3>Hide Node</h3>
+                        </div>
+                        <div class="column">
+                            <div class="ui toggle checkbox" id="checkBoxNodeVisibility">
+                                <input type="checkbox" name="public">
+                                <label></label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="column">
+                            <h3>Hide Link</h3>
+                        </div>
+                        <div class="column">
+                            <div class="ui toggle checkbox" id="checkBoxLinkVisibility">
+                                <input type="checkbox" name="public">
+                                <label></label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="column">
+                            <h3>Name</h3>
+                        </div>
+                        <div class="column">
+                            <div class="ui input">
+                                <input type="text" id="inputNodeName">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="column">
+                            <h3>Node Type</h3>
+                        </div>
+                        <div class="column">
+                            <select class="ui dropdown" id="dropdownNodeType" onchange="onDropdownNodeTypeChanged();">
+                                <option value="">Node type</option>
+                                <option value="0">Door</option>
+                                <option value="1">Window</option>
+                                <option value="3">Room</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="column">
+                            <h3>X-Coordinate</h3>
+                        </div>
+                        <div class="column">
+                            <div class="ui input">
+                                <input type="text" id="xcoordinate">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="column">
+                            <h3>Y-Coordinate</h3>
+                        </div>
+                        <div class="column">
+                            <div class="ui input">
+                                <input type="text" id="ycoordinate">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row" style="display:none;" id="linkGridHeader">
+                        <div class="column">
+                            <h3>Links</h3>
+                        </div>
+                        <div class="eight wide column">
+                            <div class="ui buttons">
+                                <button class="ui button">Add</button>
+                                <button class="ui button">Delete</button>
+                                <button class="ui button">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row" style="display:none;" id="linkGridDiv">
+                        <div class="twelve wide column">
+                            <div style="width: 200px;"></div>
+                            <div id="linkGrid" style="width: 100%; height: 200px;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="column">
+                        <h3>Nodes</h3>
+                        <div style="width: 400px;">
+                            <div id="myGrid" style="width: 100%; height: 500px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="ui padded grid footer">
+        <div class="four wide column">
+            <button class="ui button">Export</button>
+        </div>
+        <div class="twelve wide column right aligned">
+            <button class="ui button">Close</button>
+            <button class="ui button" onclick="createNodeGrid();">Create</button>
+        </div>
+    </div>
+    </div>
+
+    <script src="../vendor/SlickGrid-master/lib/firebugx.js"></script>
+
+    <script src="../vendor/SlickGrid-master/lib/jquery-1.7.min.js"></script>
+
+    <script src="../vendor/SlickGrid-master/lib/jquery-ui-1.8.16.custom.min.js"></script>
+    <script src="../vendor/SlickGrid-master/lib/jquery.event.drag-2.2.js"></script>
+
+    <script src="../vendor/SlickGrid-master/slick.core.js"></script>
+    <script src="../vendor/SlickGrid-master/slick.formatters.js"></script>
+    <script src="../vendor/SlickGrid-master/slick.editors.js"></script>
+    <script src="../vendor/SlickGrid-master/slick.grid.js"></script>
+    <script>
+        function onCellTypeChanged() {
+            var x = document.getElementById("selectCellType").value;
+            app.cell.type = x;
+        }
+
+        function onDoorTypeChanged() {
+            var x = document.getElementById("selectDoorType").value;
+            app.door.type = x;
+        }
+
+        function onPoiTypeChanged() {
+            var x = document.getElementById("selectPoiType").value;
+            app.poi.type = x;
+        }
+
+        var app = new Vue({
+            el: "#app",
+            data: {
+                cell: null,
+                door: null,
+                node: null,
+                poi: null,
+                floor: null,
+                floors: null,
+                editMode: "",
+                title: "",
+            },
+        });
+
+        function updateCell(cell) {
+            //alert(cell);
+            app.cell = cell;
+            app.door = null;
+            app.node = null;
+            app.poi = null;
+            app.floor = null;
+            app.floors = null;
+            editMode = "CELL";
+
+            updateTitle("Cell Properties");
+        }
+
+        function updateTitle(title) {
+            var x = document.getElementById("DefaultTitle");
+            app.title = title;
+
+            if (x != null) {
+                x.innerHTML = app.title;
+            }
+        }
+
+        function updateDoor(door) {
+            app.cell = null;
+            app.door = door;
+            app.node = null;
+            app.poi = null;
+            app.floor = null;
+            app.floors = null;
+            editMode = "DOOR";
+            updateTitle("Door Properties");
+        }
+
+        function updateNode(node) {
+            app.cell = null;
+            app.door = null;
+            app.node = node;
+            app.poi = null;
+            app.floor = null;
+            app.floors = null;
+            editMode = "NODE";
+            updateTitle("Node Properties");
+        }
+
+        function updatePoi(poi) {
+            app.cell = null;
+            app.door = null;
+            app.node = null;
+            app.floor = null;
+            app.floors = null;
+            app.poi = poi;
+            editMode = "POI";
+            updateTitle("Poi Properties");
+        }
+
+        //아무것도 선택하지 않은 상태
+        function updateNone() {
+            app.cell = null;
+            app.door = null;
+            app.node = null;
+            app.poi = null;
+            app.floor = null;
+            app.floors = null;
+        }
+
+        function onFloorChanged() {
+            var x = document.getElementById("selectPoiType");
+
+            app.floor = app.floors[x.value];
+
+            var elevation = document.getElementById("textInputFloorElevation");
+
+            elevation.value = app.floor.elevation;
+
+            var floorHeight = document.getElementById("textInputFloorHeight");
+
+            floorHeight.value = app.floor.height;
+
+            var floorName = document.getElementById("textInputFloorName");
+
+            floorName.value = app.floor.name;
+        }
+
+        function updateFloor(floors) {
+            updateNone();
+            app.floors = floors;
+
+            if (floors.length > 0) {
+                app.floor = floors[0];
+            }
+
+            editMode = "FLOOR";
+            updateTitle("Floor Properties");
+
+            var x = document.getElementById("divFloor");
+
+            //alert(x);
+
+            if (x != null) {
+                //updata floor combobox
+                var innerHtml = "<select id='selectPoiType' class='ui dropdown' onchange='onFloorChanged()''>" + "<option value=''>Floors</option>";
+
+                for (var i = 0; i < floors.length; i++) {
+                    innerHtml += "<option value=" + i + ">" + floors[i].name + "</option>";
+                }
+
+                innerHtml += "</select>";
+
+                x.innerHTML = innerHtml;
+            }
+        }
+
+        function initialize() {
+            createLinkGrid();
+        }
+    </script>
+    <script>
+        function onDropdownNodeTypeChanged() {
+            var x = document.getElementById("dropdownNodeType");
+
+            var option = document.createElement("option");
+            option.text = "Kiwi";
+            option.value = "4";
+            x.add(option);
+        }
+
+        function requiredFieldValidator(value) {
+            if (value == null || value == undefined || !value.length) {
+                return { valid: false, msg: "This is a required field" };
+            } else {
+                return { valid: true, msg: null };
+            }
+        }
+
+        var grid;
+        var linkGrid;
+        var data = [];
+        var linkData = [];
+        var columns = [
+            { id: "selection", name: "선택", width: 80, minWidth: 20, maxWidth: 80, cssClass: "cell-effort-driven", field: "selection", formatter: Slick.Formatters.Checkmark, editor: Slick.Editors.Checkbox },
+            { id: "name", name: "이름", field: "name", width: 120, cssClass: "cell-title", editor: Slick.Editors.Text, validator: requiredFieldValidator },
+            { id: "group", name: "그룹", field: "group", width: 100, editor: Slick.Editors.LongText },
+            { id: "visible", name: "가시화", width: 80, minWidth: 20, maxWidth: 80, cssClass: "cell-effort-driven", field: "visible", formatter: Slick.Formatters.Visible, editor: Slick.Editors.Checkbox },
+        ];
+
+        var options = {
+            editable: true,
+            enableAddRow: false,
+            enableCellNavigation: true,
+            asyncEditorLoading: false,
+            autoEdit: false,
+            headerRowHeight: 1000,
+            editCommandHandler: queueAndExecuteCommand,
+        };
+
+        var commandQueue = [];
+
+        function queueAndExecuteCommand(item, column, editCommand) {
+            commandQueue.push(editCommand);
+            editCommand.execute();
+        }
+
+        function undo() {
+            var command = commandQueue.pop();
+            if (command && Slick.GlobalEditorLock.cancelCurrentEdit()) {
+                command.undo();
+                grid.gotoCell(command.row, command.cell, false);
+            }
+        }
+
+        var imageFormatter = function () {
+            return "<img class='clickableImage' src='../images/link.png' />";
+        };
+
+        function createLinkGrid() {
+            var linkGridColumns = [
+                { id: "selection", name: "선택", width: 40, minWidth: 20, maxWidth: 80, cssClass: "cell-effort-driven", field: "selection", formatter: Slick.Formatters.Checkmark, editor: Slick.Editors.Checkbox },
+                { id: "linkedNode1", name: "연결노드1", field: "linkedNode1", width: 80, cssClass: "cell-title", editor: Slick.Editors.Text, validator: requiredFieldValidator },
+                { id: "linkedNode2", name: "연결노드2", field: "linkedNode2", width: 80, cssClass: "cell-title", editor: Slick.Editors.Text, validator: requiredFieldValidator },
+                { id: "selectLinkLine", name: "링크라인선택", width: 80, minWidth: 20, maxWidth: 80, cssClass: "cell-effort-driven", field: "editLink", formatter: imageFormatter },
+            ];
+
+            for (var i = 0; i < 500; i++) {
+                var d = (linkData[i] = {});
+
+                d["selection"] = 0;
+                d["linkedNode1"] = "Node1 " + i;
+                d["linkedNode2"] = "Node2 " + i;
+                d["selectLinkLine"] = 1;
+
+            }
+
+            linkGrid = new Slick.Grid("#linkGrid", linkData, linkGridColumns, options);
+
+            linkGrid.onClick.subscribe(function (e, args) {
+                var item = args.cell + "," + args.row;
+                //alert(item);
+
+                if (args.cell == 3) {
+                    var item = args.grid.getDataItem(args.row);
+
+                    alert(selectedNode + "," + item["linkedNode1"]);
+                }
+            });
+        }
+
+        var selectedNode = "";
+
+        function createNodeGrid() {
+
+            var newColumns = [
+                { id: "selection", name: "선택", width: 40, minWidth: 20, maxWidth: 80, cssClass: "cell-effort-driven", field: "selection", formatter: Slick.Formatters.Checkmark, editor: Slick.Editors.Checkbox },
+                { id: "name", name: "이름", field: "name", width: 80, cssClass: "cell-title", editor: Slick.Editors.Text, validator: requiredFieldValidator },
+                { id: "nodeType", name: "종류", field: "nodeType", width: 80, editor: Slick.Editors.LongText },
+                { id: "editLink", name: "링크", width: 40, minWidth: 20, maxWidth: 80, cssClass: "cell-effort-driven", field: "editLink", formatter: imageFormatter },
+                { id: "nodeVisibile", name: "노드가시화", width: 70, minWidth: 20, maxWidth: 80, cssClass: "cell-effort-driven", field: "nodeVisibile", formatter: Slick.Formatters.Visible, editor: Slick.Editors.Checkbox },
+                { id: "linkVisible", name: "링크가시화", width: 70, minWidth: 20, maxWidth: 80, cssClass: "cell-effort-driven", field: "linkVisible", formatter: Slick.Formatters.Visible, editor: Slick.Editors.Checkbox },
+            ];
+
+            for (var i = 0; i < 500; i++) {
+                var d = (data[i] = {});
+
+                d["selection"] = i % 5 == 0;
+                d["name"] = "Node " + i;
+                d["nodeType"] = "type 1";
+                d["editLink"] = 1;
+                d["nodeVisibile"] = i % 5 == 0;
+                d["linkVisible"] = i % 5 == 0;
+            }
+
+            grid = new Slick.Grid("#myGrid", data, newColumns, options);
+
+            grid.onClick.subscribe(function (e, args) {
+                var item = args.cell + "," + args.row;
+                //alert(item);
+
+                if (args.cell == 3) {
+                    selectedNode = grid.getDataItem(args.row)["name"];
+                    //hide link div
+                    document.getElementById("linkGridDiv").style.display = "block";
+                    document.getElementById("linkGridHeader").style.display = "block";
+                    createLinkGrid();
+                }
+            });
+
+            // $("#myGrid").on("click", "img.clickableImage", function(e,args){
+            //     var item = args.item;
+            //     alert(item);
+            // });
+        }
+
+
+        $(function () {
+            for (var i = 0; i < 500; i++) {
+                var d = (data[i] = {});
+
+                d["selection"] = i % 5 == 0;
+                d["name"] = "Task " + i;
+                d["group"] = "group 1";
+                d["visible"] = i % 5 == 0;
+            }
+
+            grid = new Slick.Grid("#myGrid", data, columns, options);
+        });
+
+        $(document).ready(function () {
+            $('#checkBoxFloorVisibility').change(function () {
+                if ($(this).find('input').is(":checked") == true) {
+                    alert('checked');
+                } else {
+                    alert('unchecked');
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

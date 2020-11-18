@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>작업</title>
+
+	<link rel="stylesheet" href="css/style.css?ver=01">
+	<script type="text/javascript" src="js/jquery-1.9.1.min.js"></script>
+
+	<!--스크롤바 디자인 적용(크롬,IE,파이어폭스,엣지 공용)-->
+	<link rel="stylesheet" href="css/jquery.mCustomScrollbar.min.css?ver=01">
+	<script type="text/javascript" src="js/jquery.mCustomScrollbar.concat.min.js"></script>
+
+	<!--트리메뉴-->
+	<script type="text/javascript" src="js/jquery.treeview.js"></script>
+
+</head>
+
+<body onload="createTempGridData(); UpdateGrid();">
+
+	<!--가로 패딩30px 적용 / 100%영역-->
+	<div style="width:100%; padding:30px;">
+		<!--컨텐츠1-->
+		<div class="box_wrap2">
+
+			<!--타이틀-->
+			<div class="con_title">
+				<h3 class="title_b">Cell Space Properties</h3>
+				<!--최소화 주석처리-->
+				<!--<a href="#" class="bt_sizedown_b"><span class="blind">최소화</span></a>-->
+				<a href="#" class="bt_sizeup_b"><span class="blind">최대화</span></a>
+				<a href="#" class="bt_close_b"><span class="blind">닫기</span></a>
+			</div>
+			<!--//타이틀-->
+
+			<!--내용-->
+			<div class="con_area">
+				<div class="space10"></div>
+				<div class="line_form">
+					<span class="c_left">Cell Create</span>
+					<span class="c_right mid"><a href="#"><img src="images/bt_create.png"
+								onclick="createCell();"></a></span>
+				</div>
+
+				<div class="line_form">
+					<span class="c_left">Cell Type</span>
+					<span class="c_right">
+						<label for="search">Type</label>
+						<select class="base w100 ar" id="select_cell_type" onchange="onSelectCellTypeChanged(this);">
+							<option selected>Type</option>
+							<option>Space</option>
+							<option>Door</option>
+							<option>Window</option>
+							<option>Elevator</option>
+							<option>Stair</option>
+						</select>
+					</span>
+				</div>
+
+				<div class="line_form">
+					<span class="c_left">Cell hiding</span>
+					<span class="c_right mid">
+						<input type="checkbox" id="1" name="" class="onoff">
+						<label for="1"><span class="hide">선택</span></label>
+					</span>
+				</div>
+
+				<div class="line_form">
+					<span class="c_left">Cell Group</span>
+					<span class="c_right mid"><a href="#"><img src="images/bt_group.png"></a></span>
+				</div>
+
+				<div class="line_form">
+					<span class="c_left">Cell Name</span>
+					<span class="c_right">
+						<label for="">Cell Name</label>
+						<input type="text" name="" id="input_cell_name" class="base" style="width:calc(100% - 52px)" placeholder=""
+							value="" />
+						<a href="#" onclick="setCellName" class="bt_edit btn">Edit</a>
+					</span>
+				</div>
+
+				<div class="line_form">
+					<span class="c_left">Group Name</span>
+					<span class="c_right">
+						<label for="">Group Name</label>
+						<input type="text" name="" id="input_group_name" class="base" style="width:calc(100% - 52px)" placeholder=""
+							value="" />
+						<a href="#" class="bt_edit btn">Edit</a>
+					</span>
+				</div>
+
+				<div class="line_form">
+					<span class="c_all">Cell Space data</span>
+
+					<!--항목-->
+					<ul class="account5_head">
+						<li>Selection</li>
+						<li>Name</li>
+						<li>Type</li>
+						<li>Group</li>
+						<li>Hiding</li>
+					</ul>
+					<!--//항목-->
+
+					<!--리스트-->
+					<div class="mCustomScrollbar tbl_area">
+						<table class="type01" id="grid_table">
+							<caption>이표는 상세목록입니다</caption>
+							<colgroup>
+								<col style="width:20%" />
+								<col style="width:20%" />
+								<col style="width:20%" />
+								<col style="width:20%" />
+								<col style="width:20%" />
+							</colgroup>
+							<tbody id="grid_table_body">								
+							</tbody>
+
+						</table>
+					</div>
+					<!--//리스트-->
+				</div>
+
+				<!--기능버튼-->
+				<ul class="btn_function">
+					<li><a href="#"><img src="images/btn_create.png" alt="All Create"></a></li>
+					<li><a href="#"><img src="images/btn_import.png" alt="Import"></a></li>
+					<li><a href="#"><img src="images/btn_validation.png" alt="Validation"></a></li>
+					<li><a href="#"><img src="images/btn_export.png" alt="Export"></a></li>
+				</ul>
+				<!--//기능버튼-->
+
+			</div>
+			<!--//내용-->
+
+		</div>
+		<!--//컨텐츠1-->
+
+	</div>
+	<!--//가로 패딩30px 적용 / 100%영역-->
+</body>
+<script>
+
+	// page 로딩이 끝났을 때의 처리
+	$(document).ready(function(){
+		//cell grid를 업데이트 한다.
+		sketchup.ready();
+	});
+
+	var gridData = [];
+
+	var currentCellGridData = null;
+
+	function createTempGridData() {
+		gridData = [];
+
+		for (var i = 0; i < 50; i++) {
+			var d = (gridData[i] = {});
+
+			//d["selection"] = i % 5 == 0 ? "checked" : "";
+			d["selection"] = "";
+			d["name"] = "Cell " + i;
+			d["type"] = i % 3 == 0 ? "Door" : "Cell";
+			d["group"] = "group 1";
+			d["visible"] = i % 3 == 0 ? "images/show_s.png" : "images/hide_s.png";
+		}
+	}
+
+	function UpdateGrid() {
+
+		var data = "";
+
+		for (var i = 0; i < gridData.length; i++) {
+			data += "<tr>" +
+				"<td class='al_center'><label for=''>check</label><input type='checkbox' onclick='cellGridCheckboxClicked(this);' id='" + "cell_grid_check_"+i + "' name='' " + gridData[i]["selection"] + "></td>" +
+				"<td class='al_center'>" + gridData[i]["name"] + "</td>" +
+				"<td class='al_center'>" + gridData[i]["type"] + "</td>" +
+				"<td class='al_center'>" + gridData[i]["group"] + "</td>" +
+				"<td class='al_center'><img id=" + "cell_" + i + " src='" + gridData[i]["visible"] + "' style='vertical-align:center' onclick='cell_visibility_click(" + i + ")'></td>" +
+				"</tr>";
+		}
+
+		document.getElementById("grid_table_body").innerHTML = data;
+	}
+
+	//cell grid의 체크 박스를 클릭 했을때의 처리.
+	function cellGridCheckboxClicked(obj) {
+		if(obj.checked) {
+			//uncheck another items
+			for(var i=0;i<gridData.length;i++) {
+				var targetObj = document.getElementById("cell_grid_check_" + i);
+
+				if(targetObj === obj) {
+					updateCellDialogProperty(gridData[i]);
+				} else {
+					targetObj.checked = false;
+				}
+			}
+		} 	
+		else {
+			updateCellDialogProperty(null);
+		}	
+	}
+
+	function cell_visibility_click(index) {
+		var visibility_image = document.getElementById("cell_" + index);
+
+		if (visibility_image.src.indexOf("images/show_s.png") != -1) {
+			visibility_image.src = "images/hide_s.png";
+		}
+		else {
+			visibility_image.src = "images/show_s.png";
+		}
+	}
+
+	function updateCellDialogProperty(cellInfo) {
+
+		var cellId;
+
+		if(cellInfo === null || cellInfo.length === 0) {
+			cellId = "";
+			currentCellGridData = null;
+		} else {
+			cellId = cellInfo["id"];
+			currentCellGridData = cellInfo;
+		}
+
+		var d = getCellData(cellId);
+
+		var inputTextCellName = document.getElementById("input_cell_name");
+		var inputTextGroupName = document.getElementById("input_group_name");
+
+		if(d === "") {
+			// property 부분을 비운다.
+			updateCellTypeCombobox("Type");
+			// empty cell name text
+			inputTextCellName.value = "";
+			// empty group name text
+			inputTextGroupName.value = "";
+		} else {
+			updateCellTypeCombobox(d["type"]);
+			inputTextCellName.value = d["name"];
+			//TODO:
+			inputTextGroupName.value = d["group"];
+		}
+	}
+
+	function getCellData(cellId) {
+		for(var i=0;i<gridData.length;i++) {
+			if(gridData[i]["id"] === cellId) {
+				return gridData[i];
+			}
+		}
+		return "";
+	}	
+
+	// cell grid를 업데이트 한다.
+	function updateCellGrid(cellGridData) {		
+
+		if (null != cellGridData) {
+			gridData = [];
+
+			for (var i = 0; i < cellGridData.length; i++) {
+				var gridItem = cellGridData[i];
+
+				var d = (gridData[i] = {});
+
+				d["id"] = gridItem.id;
+
+				if(currentCellGridData != null > 0 && currentCellGridData["id"] === d["id"]) {
+					d["selection"] = "checked";
+				} else {
+					d["selection"] = "";
+				}
+				
+				d["name"] = gridItem.name;
+				d["type"] = gridItem.type;
+				d["group"] = gridItem.layer;
+				d["visible"] = gridItem.visible ? "images/show_s.png" : "images/hide_s.png";;
+			}			
+		}
+
+		UpdateGrid();
+	}
+
+	//cell을 생성한다.
+	function createCell() {
+		sketchup.createCell();
+	}
+
+	function updateCellTypeCombobox(cellType) {
+		var selectCellType = document.getElementById("select_cell_type");		
+
+		var options = selectCellType.options;
+
+		for(var i=0;i<options.length;i++) {
+			if(cellType.toUpperCase() === options[i].value.toUpperCase()) {
+				selectCellType.selectedIndex = i;
+				return;
+			}
+		}
+
+		selectCellType.selectedIndex = 0;
+	}	
+
+	function onSelectCellTypeChanged(selectCellType) {
+		if(currentCellGridData != null) {
+			currentCellGridData["type"] = selectCellType.options[selectCellType.selectedIndex];
+
+			sketchup.updateCell(currentCellGridData);
+		}
+	}
+
+</script>
+
+</html>

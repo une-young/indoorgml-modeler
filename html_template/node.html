@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>작업</title>
+
+	<link rel="stylesheet" href="css/style.css?ver=01">
+	<script type="text/javascript" src="js/jquery-1.9.1.min.js"></script>
+
+	<!--스크롤바 디자인 적용(크롬,IE,파이어폭스,엣지 공용)-->
+	<link rel="stylesheet" href="css/jquery.mCustomScrollbar.min.css?ver=01">
+	<script type="text/javascript" src="js/jquery.mCustomScrollbar.concat.min.js"></script>
+
+	<!--트리메뉴-->
+	<script type="text/javascript" src="js/jquery.treeview.js"></script>
+
+</head>
+
+<body onload="setLinkDivVisibility(false)">
+
+	<!--가로 패딩30px 적용 / 100%영역-->
+	<div style="width:100%; padding:30px;">
+
+		<!--gml 메뉴 스크립트-->
+		<script>
+			$(".gml a").click(function () {
+				$(".gml a").removeClass("active");
+				$(this).addClass("active");
+			});
+		</script>
+		<!--//상단아이콘-->
+
+		<!--컨텐츠2-->
+		<div class="box_wrap">
+			<!--타이틀-->
+			<div class="con_title">
+				<h3 class="title_b">Topology Properties</h3>
+				<!--최소화 주석처리-->
+				<!--<a href="#" class="bt_sizedown_b"><span class="blind">최소화</span></a>-->
+				<a href="#" class="bt_sizeup_b"><span class="blind">최대화</span></a>
+				<a href="#" class="bt_close_b"><span class="blind">닫기</span></a>
+			</div>
+			<!--//타이틀-->
+
+			<!--내용-->
+			<div class="con_area">
+				<!--<div class="space10"></div>-->
+
+				<h4 class="inner_title">Node & Link</h4>
+
+				<div class="line_form">
+					<span class="c_left">Node hiding</span>
+					<span class="c_right mid">
+						<input type="checkbox" id="2" name="" class="onoff">
+						<label for="2" class="onoff"><span class="hide">선택</span></label>
+					</span>
+				</div>
+
+				<div class="line_form">
+					<span class="c_left">Link hiding</span>
+					<span class="c_right mid">
+						<input type="checkbox" id="3" name="" class="onoff">
+						<label for="3" class="onoff"><span class="hide">선택</span></label>
+					</span>
+				</div>
+
+				<div class="line_form">
+					<span class="c_left">Name</span>
+					<span class="c_right">
+						<label for="">Name</label>
+						<input type="text" name="" id="" class="base w100" placeholder="" value="" />
+					</span>
+				</div>
+
+				<div class="line_form">
+					<span class="c_left">Node Type</span>
+					<span class="c_right">
+						<label for="">Node Type</label>
+						<input type="text" name="" id="" class="base w100" placeholder="" value="" />
+					</span>
+				</div>
+
+				<div class="line_form">
+					<span class="c_left">X-Coordinate</span>
+					<span class="c_right">
+						<label for="">X-Coordinate</label>
+						<input type="text" name="" id="" class="base w100" placeholder="" value="" />
+					</span>
+				</div>
+
+				<div class="line_form">
+					<span class="c_left">Y-Coordinate</span>
+					<span class="c_right">
+						<label for="">Y-Coordinate</label>
+						<input type="text" name="" id="" class="base w100" placeholder="" value="" />
+					</span>
+				</div>
+
+				<div class="line_form">
+					<span class="c_all">Node & Link data</span>
+
+					<!--항목-->
+					<ul class="account6_head">
+						<li>Selec<br />tion</li>
+						<li>Node<br />Name</li>
+						<li>Node<br />Type</li>
+						<li class="one">Link</li>
+						<li>Node<br />Hiding</li>
+						<li>Link<br />Hiding</li>
+					</ul>
+					<!--//항목-->
+
+					<!--리스트-->
+					<div class="mCustomScrollbar tbl_area">
+						<table class="type01">
+							<caption>이표는 상세목록입니다</caption>
+							<colgroup>
+								<col style="width:12%" />
+								<col style="width:22%" />
+								<col style="width:22%" />
+								<col style="width:12%" />
+								<col style="width:16%" />
+								<col style="width:16%" />
+							</colgroup>
+
+							<tbody>
+								<tr>
+									<td class="al_center"><label for="">check</label><input type="checkbox" id=""
+											name=""></td>
+									<td class="al_center">A Node</td>
+									<td class="al_center">Door</td>
+									<td class="al_center"><a href="#"><img src="images/ic_link.png"
+												style="vertical-align:center" onclick="showhide('link_div')"></a>
+									</td>
+									<td class="al_center"><img src="images/show_s.png" style="vertical-align:center">
+									</td>
+									<td class="al_center"><img src="images/show_s.png" style="vertical-align:center">
+									</td>
+								</tr>
+								<tr>
+									<td class="al_center"><label for="">check</label><input type="checkbox" id=""
+											name=""></td>
+									<td class="al_center">B Node</td>
+									<td class="al_center">Space</td>
+									<td class="al_center"><a href="#"><img src="images/ic_link.png"
+												style="vertical-align:center"></a></td>
+									<td class="al_center"><img src="images/hide_s.png" style="vertical-align:center">
+									</td>
+									<td class="al_center"><img src="images/hide_s.png" style="vertical-align:center">
+									</td>
+								</tr>
+								<tr>
+									<td class="al_center"><label for="">check</label><input type="checkbox" id=""
+											name=""></td>
+									<td class="al_center">C Node</td>
+									<td class="al_center">Space</td>
+									<td class="al_center"><a href="#"><img src="images/ic_link.png"
+												style="vertical-align:center"></a></td>
+									<td class="al_center"><img src="images/show_s.png" style="vertical-align:center">
+									</td>
+									<td class="al_center"><img src="images/show_s.png" style="vertical-align:center">
+									</td>
+								</tr>
+								<tr>
+									<td class="al_center"><label for="">check</label><input type="checkbox" id=""
+											name=""></td>
+									<td class="al_center">D Node</td>
+									<td class="al_center">Window</td>
+									<td class="al_center"><a href="#"><img src="images/ic_link.png"
+												style="vertical-align:center"></a></td>
+									<td class="al_center"><img src="images/show_s.png" style="vertical-align:center">
+									</td>
+									<td class="al_center"><img src="images/show_s.png" style="vertical-align:center">
+									</td>
+								</tr>
+								<tr>
+									<td class="al_center"><label for="">check</label><input type="checkbox" id=""
+											name=""></td>
+									<td class="al_center">E Node</td>
+									<td class="al_center">Elevator</td>
+									<td class="al_center"><a href="#"><img src="images/ic_link.png"
+												style="vertical-align:center"></a></td>
+									<td class="al_center"><img src="images/show_s.png" style="vertical-align:center">
+									</td>
+									<td class="al_center"><img src="images/show_s.png" style="vertical-align:center">
+									</td>
+								</tr>
+								<tr>
+									<td class="al_center"><label for="">check</label><input type="checkbox" id=""
+											name=""></td>
+									<td class="al_center">D Node</td>
+									<td class="al_center">Window</td>
+									<td class="al_center"><a href="#"><img src="images/ic_link.png"
+												style="vertical-align:center"></a></td>
+									<td class="al_center"><img src="images/show_s.png" style="vertical-align:center">
+									</td>
+									<td class="al_center"><img src="images/show_s.png" style="vertical-align:center">
+									</td>
+								</tr>
+								<tr>
+									<td class="al_center"><label for="">check</label><input type="checkbox" id=""
+											name=""></td>
+									<td class="al_center">E Node</td>
+									<td class="al_center">Elevator</td>
+									<td class="al_center"><a href="#"><img src="images/ic_link.png"
+												style="vertical-align:center"></a></td>
+									<td class="al_center"><img src="images/show_s.png" style="vertical-align:center">
+									</td>
+									<td class="al_center"><img src="images/show_s.png" style="vertical-align:center">
+									</td>
+								</tr>
+							</tbody>
+
+						</table>
+					</div>
+					<!--컨텐츠3-->
+					<div id="link_div" class="con_area">
+
+						<!--내용-->
+						<div class="con_area">
+
+							<div class="line_form">
+
+								<!--항목-->
+								<ul class="account3_head">
+									<li>Selection</li>
+									<li>Node Name</li>
+									<li>Link</li>
+								</ul>
+								<!--//항목-->
+
+								<!--리스트-->
+								<div class="mCustomScrollbar tbl_area">
+									<table class="type01">
+										<caption>이표는 상세목록입니다</caption>
+										<colgroup>
+											<col style="width:21%" />
+											<col style="width:42%" />
+											<col style="width:37%" />
+										</colgroup>
+
+										<tbody>
+											<tr>
+												<td class="al_center"><label for="">check</label><input type="checkbox"
+														id="" name=""></td>
+												<td class="al_center">E Node</td>
+												<td class="al_center">E - D</td>
+											</tr>
+											<tr>
+												<td class="al_center"><label for="">check</label><input type="checkbox"
+														id="" name=""></td>
+												<td class="al_center">D Node</td>
+												<td class="al_center">F - H</td>
+											</tr>
+											<tr>
+												<td class="al_center"><label for="">check</label><input type="checkbox"
+														id="" name=""></td>
+												<td class="al_center">E Node</td>
+												<td class="al_center">E - D</td>
+											</tr>
+											<tr>
+												<td class="al_center"><label for="">check</label><input type="checkbox"
+														id="" name=""></td>
+												<td class="al_center">D Node</td>
+												<td class="al_center">F - H</td>
+											</tr>
+											<tr>
+												<td class="al_center"><label for="">check</label><input type="checkbox"
+														id="" name=""></td>
+												<td class="al_center">E Node</td>
+												<td class="al_center">E - D</td>
+											</tr>
+											<tr>
+												<td class="al_center"><label for="">check</label><input type="checkbox"
+														id="" name=""></td>
+												<td class="al_center">D Node</td>
+												<td class="al_center">F - H</td>
+											</tr>
+											<tr>
+												<td class="al_center"><label for="">check</label><input type="checkbox"
+														id="" name=""></td>
+												<td class="al_center">D Node</td>
+												<td class="al_center">F - H</td>
+											</tr>
+										</tbody>
+
+									</table>
+								</div>
+								<!--//리스트-->
+							</div>
+
+							<!--추가/삭제 버튼-->
+							<ul class="btn_change">
+								<li><button class="add"><span class="blind">추가</span></button></li>
+								<li><button class="del"><span class="blind">삭제</span></button></li>
+							</ul>
+							<!--//추가/삭제 버튼-->
+
+							<!--하단 버튼-->
+							<ul class="btn_group">
+								<li><a href="#" class="ok" style="" onclick="showhide('link_div')"><img
+											src="images/ic_ok.png" class="lk">OK</a></li>
+								<li><a href="#" class="cancle" onclick="showhide('link_div')"><img
+											src="images/ic_cancle.png" class="lk">Cancle</a>
+								</li>
+							</ul>
+							<!--//하단 버튼-->
+
+						</div>
+						<!--//내용-->
+
+					</div>
+					<!--//리스트-->
+				</div>
+
+				<!--하단 버튼-->
+				<ul class="btn_group">
+					<li><a href="#" class="ok" style=""><img src="images/ic_ok.png" class="lk">OK</a></li>
+					<li><a href="#" class="cancle"><img src="images/ic_cancle.png" class="lk">Cancle</a></li>
+				</ul>
+				<!--//하단 버튼-->
+
+			</div>
+			<!--//내용-->
+
+		</div>
+		<!--//컨텐츠2-->
+
+
+		<!--//컨텐츠3-->
+</body>
+<script>
+	function setLinkDivVisibility(visibility) {
+		if (visibility) {
+			document.getElementById("link_div").style.display = "block";
+		} else {
+			document.getElementById("link_div").style.display = "none";
+		}
+	}
+
+	function showhide(id) {
+		// if (document.getElementById) {
+		// 	var divid = document.getElementById(id);
+		// 	var divs = document.getElementsByClassName("hideable");
+		// 	for (var i = 0; i < divs.length; i = i + 1) {
+		// 		$(divs[i]).fadeOut("slow");
+		// 	}
+		// 	$(divid).fadeIn("slow");
+		// }
+
+		$("#" + id).toggle(500);
+
+		return false;
+	}
+</script>
+
+</html>

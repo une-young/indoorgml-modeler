@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link href="../vendor/Semantic-UI/semantic.min.css" rel="stylesheet" />
+        <script src="../vendor/jquery.js"></script>
+        <script src="../vendor/Semantic-UI/semantic.min.js"></script>
+        <script src="../vendor/vue.js"></script>
+        <link rel="stylesheet" href="../vendor/SlickGrid-master/slick.grid.css" type="text/css" />
+        <link rel="stylesheet" href="../vendor/SlickGrid-master/css/smoothness/jquery-ui-1.8.16.custom.css" type="text/css" />
+        <link rel="stylesheet" href="../vendor/SlickGrid-master/examples/examples.css" type="text/css" />
+        <style>
+            /* Give the content some space */
+            body {
+                padding: 15px;
+            }
+            /* Fix footer position to bottom */
+            .footer {
+                position: absolute;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: white;
+                border-top: 1px solid silver;
+            }
+            /* Define a 128x128 preview square */
+            .preview {
+                position: relative;
+                display: inline-block;
+                width: 128px;
+                height: 128px;
+                font-size: 0px;
+                background: url("../images/transparent.png");
+                overflow: hidden;
+            }
+            .preview span {
+                display: inline-block;
+                width: 50%;
+                height: 100%;
+            }
+            .preview img {
+                display: inline-block;
+                max-width: 100%;
+                max-height: 100%;
+                /* Center element */
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translateX(-50%) translateY(-50%);
+            }
+            /* Fine tune input field sizes */
+            .ui.form .field .ui.label {
+                width: 60px;
+            }
+            .ui.form .field .ui.input {
+                width: 128px;
+            }
+            .ui.form .field .ui.input input {
+                width: 60px;
+            }
+            .cell-title {
+                font-weight: bold;
+            }
+
+            .cell-effort-driven {
+                text-align: center;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="app">
+            <!--
+      cell을 선택했을때의 block
+    -->
+            <template v-if="cell">
+              <h2>Cell Space Properties</h2>
+              <div class="ui padded grid">
+                  <div class="sixteen wide centered column">                    
+                      <div class="ui three column grid">
+                          <div class="row">
+                              <div class="column">
+                                  <h3>Cell Create</h3>
+                              </div>                                  
+                              <div class="column">
+                                  <button class="ui button">Create</button>
+                              </div>
+                          </div>
+                          <div class="row">
+                              <div class="column">                                
+                                    <h3>Cell Type</h3>                                
+                              </div>
+                              <div class="column">
+                                <select id="selectCellType" class="ui dropdown">
+                                    <option value="">Cell type</option>
+                                    <option value="SPACE">Cell space</option>
+                                    <option value="ELEVATOR">Elevator</option>
+                                    <option value="STAIR">Stair</option>
+                                    <option value="DOOR">Door</option>
+                                </select>
+                            </div>
+                          </div>
+                          <div class="row">
+                            <div class="column">
+                                <h3>Cell Group</h3>      
+                            </div>
+                            <div class="column">
+                                <button class="ui labled icon button">
+                                    <i class ="object group outline icon"></i>
+                                    Group
+                                </button>
+                            </div>  
+                          </div>
+                          <div class="row">
+                            <div class="column">
+                                <h3>Cell Name</h3>      
+                            </div>
+                            <div class="column">
+                              <div class="ui input">
+                                <input type="text" placeholder= "cell name..." id="input_cell_name">
+                              </div>
+                            </div>
+                          </div>
+                          <div class="row">
+                            <div class="column">
+                                <h3>Group Name</h3>      
+                            </div>
+                            <div class="column">
+                              <div class="ui input">
+                                <input type="text" placeholder="group name..." id="input_group_name">
+                              </div>
+                            </div>
+                          </div>
+                          <div class="row">
+                              <div class="column">
+                                  <button class="ui button" v-on:click="showThisCellOnly">Show this cell only</button>
+                              </div>
+                          </div>
+                          <div class="row">
+                              <div style="width: 400px;">
+                                  <div id="myGrid" style="width: 100%; height: 500px;"></div>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+            </template>
+            <!--
+      door를 선택했을때의 block
+    -->
+            <template v-else-if="door">
+                <h2>Door properties</h2>
+                <div class="ui padded grid">
+                    <div class="eight wide column">
+                        <template v-if="door.type">
+                            <h3>Name: {{ door.name }}</h3>
+                            <div class="ui one column vertically padded grid">
+                                <div class="column">
+                                    <div class="ui label">
+                                        Door Type: {{ door.type }}
+                                    </div>
+                                </div>
+                                <div class="column">
+                                    <select id="selectDoorType" class="ui dropdown" onchange="onDoorTypeChanged()">
+                                        <option value="">Door type</option>
+                                        <option value="PASSABLE">Passable</option>
+                                        <option value="ONESIDE">One side</option>
+                                        <option value="NOTPASSABLE">Not passable</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </template>
+            <!--
+      poi를 선택했을 때의 block
+    -->
+            <template v-else-if="poi">
+                <h2>POI properties</h2>
+                <div class="ui padded grid">
+                    <div class="eight wide column">
+                        <template v-if="poi.type">
+                            <h3>Name: {{ poi.name }}</h3>
+                            <div class="ui one column vertically padded grid">
+                                <div class="column">
+                                    <div class="ui label">
+                                        Poi Type: {{ poi.type }}
+                                    </div>
+                                </div>
+                                <div class="column">
+                                    <select id="selectPoiType" class="ui dropdown" onchange="onPoiTypeChanged()">
+                                        <option value="">Poi type</option>
+                                        <option value="NONE">None</option>
+                                        <option value="SPACE">Space</option>
+                                        <option value="ETC">Etc</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </template>
+            <!--
+      층을 선택했을 때의 block
+    -->
+            <template v-else-if="floors">
+                <h2>Floor properties</h2>
+                <div class="ui padded grid">
+                    <div class="twelve wide column">
+                        <template v-if="floor.name">
+                            <h3>Name: {{ floor.name }}</h3>
+                            <div class="ui one column vertically padded grid">
+                                <div class="column" id="divFloor"></div>
+                                <div class="ui labeled input">
+                                    <div class="ui label">
+                                        Name
+                                    </div>
+                                    <input type="text" placeholder="Name" id="textInputFloorName" />
+                                </div>
+                                <br />
+                                <div class="ui labeled input">
+                                    <div class="ui label">
+                                        Height
+                                    </div>
+                                    <input type="text" placeholder="Height" id="textInputFloorHeight" />
+                                </div>
+                                <br />
+                                <div class="ui labeled input">
+                                    <div class="ui label">
+                                        Elevation
+                                    </div>
+                                    <input type="text" placeholder="Elevation" id="textInputFloorElevation" />
+                                </div>
+                                <div class="column">
+                                    <button class="ui button" v-on:click="createFloorLayer">Create Layer</button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </template>
+            <template v-else>
+                <h2 id="DefaultTitle">{{title}}</h2>
+                <h3>[No Entity Selected]</h3>
+                <p>Select an entity.</p>
+
+                <div class="ui padded grid footer">
+                    <div class="four wide column">
+                        <button class="ui button" v-on:click="save">Export</button>                                                        
+                        
+                    </div>                    
+                    <div class="four wide column">
+                        <button class="ui button" v-on:click="read">Import</button>                
+                    </div>
+                    <div class="eight wide column right aligned">
+                        <button class="ui button" v-on:click="cancel">Close</button>
+                        <button class="ui button" v-on:click="create">Create</button>
+                        
+                    </div>
+                </div>
+            </template>            
+        </div>
+
+        <script src="../vendor/SlickGrid-master/lib/firebugx.js"></script>
+
+        <!--
+  <script src="../vendor/SlickGrid-master/lib/jquery-1.7.min.js"></script>
+  -->
+        <script src="../vendor/SlickGrid-master/lib/jquery-ui-1.8.16.custom.min.js"></script>
+        <script src="../vendor/SlickGrid-master/lib/jquery.event.drag-2.2.js"></script>
+
+        <script src="../vendor/SlickGrid-master/slick.core.js"></script>
+        <script src="../vendor/SlickGrid-master/slick.formatters.js"></script>
+        <script src="../vendor/SlickGrid-master/slick.editors.js"></script>
+        <script src="../vendor/SlickGrid-master/slick.grid.js"></script>
+        <script>
+            function onCellTypeChanged() {
+                var x = document.getElementById("selectCellType").value;
+                app.cell.type = x;
+            }
+
+            function onDoorTypeChanged() {
+                var x = document.getElementById("selectDoorType").value;
+                app.door.type = x;
+            }
+
+            function onPoiTypeChanged() {
+                var x = document.getElementById("selectPoiType").value;
+                app.poi.type = x;
+            }           
+
+            function updateSketchUpCells() {
+                if(undefined != grid) {
+                    
+                }
+            } 
+
+            var app = new Vue({
+                el: "#app",
+                data: {
+                    cell: null,
+                    door: null,
+                    node: null,
+                    poi: null,
+                    floor: null,
+                    floors: null,
+                    editMode: "",
+                    title: "",
+                },
+                methods: {
+                    save: function () {
+                        sketchup.save();
+                    },
+                    read: function () {
+                        sketchup.read();
+                    },
+                    create: function () {
+                        //alert(editMode);
+
+                        if (editMode == "CELL") {
+                            sketchup.createCell();
+                        } else if (editMode == "POI") {
+                            sketchup.createPoi();
+                        } else if (editMode == "NODE") {
+                            sketchup.createNode();
+                        } else if (editMode == "DOOR") {
+                            sketchup.createDoor();
+                        }
+                    },
+                    cancel: function () {
+                        sketchup.cancel();
+                    },
+                    showThisCellOnly: function () {
+                        sketchup.showThisCellOnly();
+                    },
+                    createFloorLayer: function () {
+                        sketchup.createFloorLayer(this.floor);
+                    },
+                },
+                mounted: function () {
+                    sketchup.ready();
+                },
+            });
+
+            function updateCell(cell) {
+                //alert(cell);
+                app.cell = cell;
+                app.door = null;
+                app.node = null;
+                app.poi = null;
+                app.floor = null;
+                app.floors = null;
+                editMode = "CELL";
+                var x = document.getElementById("input_cell_name");
+
+                if(x != undefined) {
+                    x.value = cell.name;
+                }
+
+                var y = document.getElementById("input_group_name");
+
+                if(y != undefined) {
+                    y.value = cell.layer;
+                }
+
+                updateTitle("Cell Properties");
+            }
+
+            function updateTitle(title) {
+                var x = document.getElementById("DefaultTitle");
+                app.title = title;
+
+                if (x != null) {
+                    x.innerHTML = app.title;
+                }
+            }
+
+            function updateDoor(door) {
+                app.cell = null;
+                app.door = door;
+                app.node = null;
+                app.poi = null;
+                app.floor = null;
+                app.floors = null;
+                editMode = "DOOR";
+                updateTitle("Door Properties");
+            }
+
+            function updateGrid(gridData) {
+                if(undefined != grid && null != gridData) {
+                    data = [];
+                    for(var i=0;i<gridData.length;i++) {
+                        var gridItem = gridData[i];
+
+                        var d = (data[i] = {});
+
+                        d["selection"] = true;
+                        d["name"] = gridItem.name;
+                        d["group"] = gridItem.layer;
+                        d["visible"] = true;
+                    }
+                    grid.setData(data);
+                    grid.render();
+                    //grid = new Slick.Grid("#myGrid", newData, columns, options);
+                }
+            }
+
+            function updateNode(node) {
+                app.cell = null;
+                app.door = null;
+                app.node = node;
+                app.poi = null;
+                app.floor = null;
+                app.floors = null;
+                editMode = "NODE";
+                updateTitle("Node Properties");
+            }
+
+            function updatePoi(poi) {
+                app.cell = null;
+                app.door = null;
+                app.node = null;
+                app.floor = null;
+                app.floors = null;
+                app.poi = poi;
+                editMode = "POI";
+                updateTitle("Poi Properties");
+            }
+
+            //아무것도 선택하지 않은 상태
+            function updateNone() {
+                app.cell = null;
+                app.door = null;
+                app.node = null;
+                app.poi = null;
+                app.floor = null;
+                app.floors = null;
+            }
+
+            function onFloorChanged() {
+                var x = document.getElementById("selectPoiType");
+
+                app.floor = app.floors[x.value];
+
+                var elevation = document.getElementById("textInputFloorElevation");
+
+                elevation.value = app.floor.elevation;
+
+                var floorHeight = document.getElementById("textInputFloorHeight");
+
+                floorHeight.value = app.floor.height;
+
+                var floorName = document.getElementById("textInputFloorName");
+
+                floorName.value = app.floor.name;
+            }
+
+            function updateFloor(floors) {
+                updateNone();
+                app.floors = floors;
+
+                if (floors.length > 0) {
+                    app.floor = floors[0];
+                }
+
+                editMode = "FLOOR";
+                updateTitle("Floor Properties");
+
+                var x = document.getElementById("divFloor");
+
+                //alert(x);
+
+                if (x != null) {
+                    //updata floor combobox
+                    var innerHtml = "<select id='selectPoiType' class='ui dropdown' onchange='onFloorChanged()''>" + "<option value=''>Floors</option>";
+
+                    for (var i = 0; i < floors.length; i++) {
+                        innerHtml += "<option value=" + i + ">" + floors[i].name + "</option>";
+                    }
+
+                    innerHtml += "</select>";
+
+                    x.innerHTML = innerHtml;
+                }
+            }
+        </script>
+        <script>
+            function requiredFieldValidator(value) {
+                if (value == null || value == undefined || !value.length) {
+                    return { valid: false, msg: "This is a required field" };
+                } else {
+                    return { valid: true, msg: null };
+                }
+            }
+
+            var grid;
+            var data = []; 
+
+            var columns = [
+                { id: "selection", name: "Selection", width: 80, minWidth: 20, maxWidth: 80, cssClass: "cell-effort-driven", field: "selection", formatter: Slick.Formatters.Checkmark, editor: Slick.Editors.Checkbox },
+                { id: "name", name: "NAme", field: "name", width: 120, cssClass: "cell-title", editor: Slick.Editors.Text, validator: requiredFieldValidator },
+                { id: "group", name: "Group", field: "group", width: 100, editor: Slick.Editors.LongText },
+                //{ id: "duration", name: "Duration", field: "duration", editor: Slick.Editors.Text },
+                //{ id: "%", name: "% Complete", field: "percentComplete", width: 80, resizable: false, formatter: Slick.Formatters.PercentCompleteBar, editor: Slick.Editors.PercentComplete },
+                //{ id: "start", name: "Start", field: "start", minWidth: 60, editor: Slick.Editors.Date },
+                //{ id: "finish", name: "Finish", field: "finish", minWidth: 60, editor: Slick.Editors.Date },
+                { id: "visible", name: "Visiblity", width: 80, minWidth: 20, maxWidth: 80, cssClass: "cell-effort-driven", field: "visible", formatter: Slick.Formatters.Visible, editor: Slick.Editors.Checkbox },
+            ];
+
+            var options = {
+                editable: true,
+                enableAddRow: false,
+                enableCellNavigation: true,
+                asyncEditorLoading: false,
+                autoEdit: false,
+                headerRowHeight: 1000,
+                editCommandHandler: queueAndExecuteCommand,
+            };
+
+            var commandQueue = [];
+
+            function queueAndExecuteCommand(item, column, editCommand) {
+                commandQueue.push(editCommand);
+                var oldName = item.name
+                editCommand.execute();
+                sketchup.updateCell(item,oldName);
+            }
+
+            function undo() {
+                var command = commandQueue.pop();
+                if (command && Slick.GlobalEditorLock.cancelCurrentEdit()) {
+                    command.undo();
+                    grid.gotoCell(command.row, command.cell, false);
+                }
+            }
+
+            $(function () {
+                for (var i = 0; i < 1; i++) {
+                    var d = (data[i] = {});
+
+                    d["selection"] = true;
+                    d["name"] = "cell " + i;
+                    d["group"] = "group";
+                    d["visible"] = true;
+                }
+
+                grid = new Slick.Grid("#myGrid", data, columns, options);
+            });
+        </script>
+    </body>
+</html>

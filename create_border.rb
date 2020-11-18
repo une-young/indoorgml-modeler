@@ -20,12 +20,12 @@ module RodemSoft
             end
 
             File.write('C:\\Users\\Public\\Documents\\border.txt', $data)
-            system('C:\\Users\\apple\\Documents\\Unity\\ProceduralBuildingGeneration\\exe\\ProceduralBuildingGeneration.exe','')
+            system('.\\FloorPlanGenerator\\FloorPlanGenerator.exe','')
         end
     end
 
     unless file_loaded?("create_broder.rb")
-        menu = UI.menu("PlugIns").add_item("Create border") { RunUnity() }
+        menu = UI.menu("PlugIns").add_item("룸 생성기 실행") { RunUnity() }
         file_loaded("create_broder.rb")
       end
 end

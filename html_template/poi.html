@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>작업</title>
+
+<link rel="stylesheet" href="css/style.css?ver=01">
+<script type="text/javascript" src="js/jquery-1.9.1.min.js" ></script>
+
+<!--스크롤바 디자인 적용(크롬,IE,파이어폭스,엣지 공용)-->
+<link rel="stylesheet" href="css/jquery.mCustomScrollbar.min.css?ver=01">
+<script type="text/javascript" src="js/jquery.mCustomScrollbar.concat.min.js"></script>
+
+<!--트리메뉴-->
+<script type="text/javascript" src="js/jquery.treeview.js" ></script>
+
+</head>
+
+<body>
+
+<!--가로 패딩30px 적용 / 100%영역-->
+<div style="width:100%; padding:30px;">
+
+
+
+<!--gml 메뉴 스크립트-->
+<script>
+$(".gml a").click(function(){
+	$(".gml a").removeClass("active");
+	$(this).addClass("active");
+});
+</script>
+<!--//상단아이콘-->
+
+<!--컨텐츠4-->
+<div class="box_wrap">
+
+	<!--타이틀-->
+	<div class="con_title">
+		<h3 class="title_b">POI Properties</h3>
+		<!--최소화 주석처리-->
+		<!--<a href="#" class="bt_sizedown_b"><span class="blind">최소화</span></a>-->
+		<a href="#" class="bt_sizeup_b"><span class="blind">최대화</span></a>
+		<a href="#" class="bt_close_b"><span class="blind">닫기</span></a>
+	</div>
+	<!--//타이틀-->
+
+	<!--내용-->
+	<div class="con_area">
+	<!--<div class="space10"></div>-->
+
+	<h4 class="inner_title">POI</h4>
+
+	<div class="line_form">
+		<span class="c_left">POI hiding</span>
+		<span class="c_right mid">
+			<input type="checkbox" id="4" name="" class="onoff">
+			<label for="4"class="onoff"><span class="hide">선택</span></label>
+		</span>
+	</div>
+
+	<div class="line_form">
+		<span class="c_left">Name</span>
+		<span class="c_right">
+			<label for="">Name</label>
+			<input type="text" name="" id="" class="base w100" placeholder="" value=""/>
+		</span>
+	</div>
+
+	<div class="line_form">
+		<span class="c_left">POI Type</span>
+		<span class="c_right mid"><a href="#"><img src="images/bt_type.png"></a></span>
+	</div>
+
+	<div class="line_form">
+		<span class="c_left">X-Coordinate</span>
+		<span class="c_right">
+			<label for="">X-Coordinate</label>
+			<input type="text" name="" id="" class="base w100" placeholder="" value=""/>
+		</span>
+	</div>
+
+	<div class="line_form">
+		<span class="c_left">Y-Coordinate</span>
+		<span class="c_right">
+			<label for="">Y-Coordinate</label>
+			<input type="text" name="" id="" class="base w100" placeholder="" value=""/>
+		</span>
+	</div>
+
+	<div class="line_form">
+		<span class="c_all">POI data</span>
+
+		<!--항목-->
+		<ul class="account4_head">
+			<li>Selec<br/>tion</li>
+			<li>POI<br/>name</li>
+			<li>POI Type<br/><span class="f1r t_normal">Level 1&nbsp;/&nbsp;Level 2&nbsp;/&nbsp;Level 3</span></li>
+			<li class="one">Hiding</li>
+		</ul>
+		<!--//항목-->
+							
+		<!--리스트-->
+		<div class="mCustomScrollbar tbl_area">
+		<table class="type01">
+			<caption>이표는 상세목록입니다</caption>
+			<colgroup>
+				<col style="width:13%"/>
+				<col style="width:21%"/>
+				<col style="width:17%"/>
+				<col style="width:17%"/>
+				<col style="width:17%"/>
+				<col style="width:15%"/>
+			</colgroup>
+
+			<tbody>
+			<tr>
+				<td class="al_center"><label for="">check</label><input type="checkbox" id="" name=""></td>
+				<td class="al_center">A POI</td>
+				<td class="al_center">type1</td>
+				<td class="al_center">type2</td>
+				<td class="al_center">type3</td>
+				<td class="al_center"><img src="images/show_s.png" style="vertical-align:center"></td>
+			</tr>
+			<tr>
+				<td class="al_center"><label for="">check</label><input type="checkbox" id="" name=""></td>
+				<td class="al_center">A POI</td>
+				<td class="al_center">type1</td>
+				<td class="al_center">type2</td>
+				<td class="al_center">type3</td>
+				<td class="al_center"><img src="images/show_s.png" style="vertical-align:center"></td>
+			</tr>
+			<tr>
+				<td class="al_center"><label for="">check</label><input type="checkbox" id="" name=""></td>
+				<td class="al_center">A POI</td>
+				<td class="al_center">type1</td>
+				<td class="al_center">type2</td>
+				<td class="al_center">type3</td>
+				<td class="al_center"><img src="images/show_s.png" style="vertical-align:center"></td>
+			</tr>
+			<tr>
+				<td class="al_center"><label for="">check</label><input type="checkbox" id="" name=""></td>
+				<td class="al_center">A POI</td>
+				<td class="al_center">type1</td>
+				<td class="al_center">type2</td>
+				<td class="al_center">type3</td>
+				<td class="al_center"><img src="images/show_s.png" style="vertical-align:center"></td>
+			</tr>
+			<tr>
+				<td class="al_center"><label for="">check</label><input type="checkbox" id="" name=""></td>
+				<td class="al_center">A POI</td>
+				<td class="al_center">type1</td>
+				<td class="al_center">type2</td>
+				<td class="al_center">type3</td>
+				<td class="al_center"><img src="images/show_s.png" style="vertical-align:center"></td>
+			</tr>
+			<tr>
+				<td class="al_center"><label for="">check</label><input type="checkbox" id="" name=""></td>
+				<td class="al_center">A POI</td>
+				<td class="al_center">type1</td>
+				<td class="al_center">type2</td>
+				<td class="al_center">type3</td>
+				<td class="al_center"><img src="images/show_s.png" style="vertical-align:center"></td>
+			</tr>
+			<tr>
+				<td class="al_center"><label for="">check</label><input type="checkbox" id="" name=""></td>
+				<td class="al_center">A POI</td>
+				<td class="al_center">type1</td>
+				<td class="al_center">type2</td>
+				<td class="al_center">type3</td>
+				<td class="al_center"><img src="images/show_s.png" style="vertical-align:center"></td>
+			</tr>
+			</tbody>
+
+		</table>
+		</div>
+		<!--//리스트-->  
+	</div>
+
+	<!--하단 버튼-->
+	<ul class="btn_group">
+		<li><a href="#" class="ok" style=""><img src="images/ic_ok.png" class="lk">OK</a></li>
+		<li><a href="#" class="cancle"><img src="images/ic_cancle.png" class="lk">Cancle</a></li>
+	</ul>
+	<!--//하단 버튼-->
+
+	</div>
+	<!--//내용-->
+
+</div>
+<!--//컨텐츠4-->
+
+
+</div>
+<!--//컨텐츠6-->
+
+
+
+</div>
+<!--//가로 패딩30px 적용 / 100%영역-->
+
+
+
+</body>
+</html>
