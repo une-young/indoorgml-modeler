@@ -46,6 +46,8 @@ module UNES
       attr_writer :component
       attr_reader :node_type
       attr_writer :node_type
+      attr_reader :anchor
+      attr_writer :anchor
 
       @@node_type_names = %w[NONE DOOR WINDOW ROOM]
 
@@ -56,11 +58,48 @@ module UNES
         @parent = nil
         # node의 형상 entity (Component)
         @component = nil
-        @node_type = NodeType::NONE
+        @node_type = 'NORMAL'
+        @anchor = Anchor.new
+      end
+    end
+
+    # anchor class
+    class Anchor
+      MAIN = UNES::IndoorGmlModeler
+      attr_reader :position
+      attr_writer :position
+      attr_reader :rotation
+      attr_writer :rotation
+      def initialize
+        # 위경도
+        @position = Geom::Point3d.new
+        @rotation = 0.0
       end
 
-      def get_node_type_name
-        @@node_type_names[@node_type]
+      def read(file_path)
+        lines = File.readlines(file_path)
+
+        if !lines.nil? && lines.length == 3
+          x = lines[0].to_f
+          y = lines[1].to_f
+          rotation = lines[2].to_f
+
+          @position = Geom::Point3d.new(x, y, 0)
+          @rotation = rotation
+        end
+      end
+
+      def write(file_path, id)
+        data = ''
+        data.concat(id)
+        data.concat('\n')
+        data.concat(@position.x.to_s)
+        data.concat('\n')
+        data.concat(@position.y.to_s)
+        data.concat('\n')
+        data.concat(@rotation.to_s)
+
+        File.write(file_path, data)
       end
     end
 
@@ -78,16 +117,16 @@ module UNES
       NOTPASSABLE = 2
     end
 
-    module PoiType
-      NONE = 0
-      SPACE = 1
-      ETC = 2
-    end
+    # module PoiType
+    #   NONE = 0
+    #   SPACE = 1
+    #   ETC = 2
+    # end
 
     module NodeType
       NONE = 0
       DOOR = 1
-      WINDOW =2
+      WINDOW = 2
       ROOM = 3
     end
 
@@ -218,6 +257,19 @@ module UNES
         @@cell_type_names[@cell_type]
       end
 
+      class << self
+        def get_cell_type_by_name(cell_type_name)
+          counter = 0
+          @@cell_type_names.each do |n|
+            return counter if cell_type_name == n
+
+            counter += 1
+          end
+
+          -1
+        end
+      end
+
       def has_entity(entity)
         false if entity.nil?
 
@@ -256,7 +308,9 @@ module UNES
 
       def to_hash
         {
+          node1_id: @node1.id,
           node1_name: @node1.name,
+          node2_id: @node2.id,
           node2_name: @node2.name
         }
       end
@@ -332,34 +386,44 @@ module UNES
     class Poi < Element
       attr_reader :component
       attr_writer :component
-      attr_reader :poi_type
-      attr_writer :poi_type
+      attr_reader :poi_type1
+      attr_writer :poi_type1
+      attr_reader :poi_type2
+      attr_writer :poi_type2
+      attr_reader :poi_type3
+      attr_writer :poi_type3
       attr_reader :position
       attr_writer :position
 
 
-      @@poi_type_names = %w[NONE SPACE ETC]
+      # @@poi_type_names = %w[NONE SPACE ETC]
 
       def initialize
         super
         # poi 3차원 형태 인스턴스
         @component = nil
-        @poi_type = PoiType::NONE
+        @poi_type1 = 'NONE'
+        @poi_type2 = 'NONE'
+        @poi_type3 = 'NONE'
         @position = Geom::Point3d.new
       end
 
-      def get_poi_type_name
-        @@poi_type_names[@poi_type]
-      end
+      # def get_poi_type_name
+      #   @@poi_type_names[@poi_type]
+      # end
     end
 
     class IndoorGmlEntitiesObserver < EntitiesObserver
       def onElementAdded(entities, entity)
-        # puts "onElementAdded: #{entity}"
+        puts "onElementAdded: #{entity.entityID }"
       end
 
       def onElementModified(entities, entity)
-        # puts "onElementModified: #{entity}"
+        puts "onElementModified: #{entity.entityID }"
+      end
+
+      def onElementRemoved(entities, entity_id)
+        puts "onElementRemoved: #{entity_id}"
       end
     end
 
@@ -395,7 +459,9 @@ module UNES
         if entity.is_a?(Group)
           cell = MAIN.find_cell_by_group entity
 
-          MAIN.cells.delete(cell) if cell.nil?
+          MAIN.cells.delete(cell) unless cell.nil?
+
+          puts MAIN.cells.length
         end
       end
     end
@@ -500,6 +566,9 @@ module UNES
         @cell_material = materials.add('indoor_cell')
         @cell_material.color = Color.new('red')
         @cell_material.alpha = 0.3
+        @stair_material = materials.add('indoor_stair')
+        @stair_material.color = Color.new('yellow')
+        @stair_material.alpha = 0.3
         @door_material = materials.add('indoor_door')
         @door_material.color = Color.new('green')
         @door_material.alpha = 0.8
@@ -559,7 +628,8 @@ module UNES
 
         false
       end
-
+      
+      #TODO: 함수가 너무 길어서 줄여야 할듯.
       def create_cell(entity)
         cell = nil
         if entity.is_a?(Face)
@@ -617,12 +687,20 @@ module UNES
         end
 
         # node link 갱신
+        update_all_nodes
+
+        cell
+      end
+
+      # 모든 node-link를 갱신한다. door의 경우 인접 cell과 연결한다.
+      def update_all_nodes
         @nodes.each do |n|
           next unless n.parent.is_a?(Cell)
 
-          next unless n.parent.cell_type == CellType::DOOR
+          result = get_intersected_cells_from_node(n) if n.parent.cell_type == CellType::DOOR
+          result = get_vertical_intersected_cells_from_node(n) if n.parent.cell_type == CellType::STAIR
 
-          result = get_intersected_cells_from_node(n)
+          next if result.nil?
 
           result.each do |c|
             # link가 존재하지 않는다면 link를 생성
@@ -633,15 +711,33 @@ module UNES
             @links.push link unless link.nil?
           end
         end
+      end
 
-        cell
+      def get_vertical_intersected_cells_from_node(node)
+        intersected = []
+
+        @cells.each do |c|
+          next if c == node.parent
+
+          result = c.group.bounds.intersect(node.parent.group.bounds)
+
+          puts "#{result.depth},#{result.diagonal},#{result.width},#{result.height}" unless result.empty?
+
+          intersected.push c if !result.empty? && result.depth.to_f == 0.0
+        end
+
+        intersected
       end
 
       def get_intersected_cells_from_node(node)
         intersected = []
 
         @cells.each do |c|
-          result = c.group.bounds.intersect(node.component.bounds)
+          next if c == node.parent
+
+          result = c.group.bounds.intersect(node.parent.group.bounds)
+
+          puts "#{result.depth},#{result.diagonal},#{result.width},#{result.height}" unless result.empty?
 
           intersected.push c unless result.empty?
         end
@@ -679,10 +775,6 @@ module UNES
         node.component = instance
         node.position = center
 
-        node.node_type = NodeType::DOOR if element.is_a?(Door)
-
-        node.node_type = NodeType::ROOM if element.is_a?(Cell)
-
         @node_creation_count += 1
         @nodes.push(node)
         node
@@ -705,6 +797,33 @@ module UNES
       def get_cell(group)
         @cells.each do |c|
           return c if c.group == group
+        end
+
+        nil
+      end
+
+      # id로 cell을 가져온다.
+      def get_cell_by_id(id)
+        @cells.each do |c|
+          return c if c.id == id
+        end
+
+        nil
+      end
+
+      # id로 poi를 가져온다.
+      def get_poi_by_id(id)
+        @pois.each do |p|
+          return p if p.id == id
+        end
+
+        nil
+      end
+
+      # ide로 node를 가져온다.
+      def get_node_by_id(id)
+        @nodes.each do |n|
+          return n if n.id == id
         end
 
         nil
@@ -877,14 +996,31 @@ module UNES
         html_file = File.join(__dir__, 'html_template', url)
         puts "edit mode:#{@edit_mode}"
 
+        width = 540
+        height = 620
+        case @edit_mode
+        when EditMode::CELL
+          width = 540
+          height = 620
+        when EditMode::NODE
+          width = 520
+          height = 700
+        when EditMode::POI
+          width = 520
+          height = 654
+        else
+          width = 540
+          height = 620
+        end
+
         options = {
           dialog_title: 'IndoorGml Modeler',
           preferences_key: 'unes.indoorgml.modeler',
           style: UI::HtmlDialog::STYLE_DIALOG,
           # Set a fixed size now that we know the content size.
           resizable: true,
-          width: 540,
-          height: 580
+          width: width,
+          height: height
         }
 
         unless @dialog.nil?
@@ -921,7 +1057,14 @@ module UNES
 
         @dialog.add_action_callback('createCell') do |_action_context, _value|
           entity = Sketchup.active_model.selection.first
-          create_cell(entity) if entity.is_a?(Face) || entity.is_a?(Group) || entity.is_a?(ComponentInstance)
+          if entity.is_a?(Face) || entity.is_a?(Group) || entity.is_a?(ComponentInstance)
+            cell = create_cell(entity) 
+            unless cell.nil?
+              Sketchup.active_model.selection.clear
+              Sketchup.active_model.selection.add cell.group
+              update_dialog
+            end
+          end
         end
 
         @dialog.add_action_callback('createDoor') do |_action_context, _value|
@@ -945,7 +1088,14 @@ module UNES
 
         @dialog.add_action_callback('createPoi') do |_action_context, _value|
           entity = Sketchup.active_model.selection.first
-          create_poi(entity) if entity.is_a?(ComponentInstance)
+          poi = create_poi(entity) if entity.is_a?(ComponentInstance)
+
+          unless poi.nil?
+            puts 'poi created'
+            Sketchup.active_model.selection.clear
+            Sketchup.active_model.selection.add poi.component
+            update_dialog
+          end
 
           nil
         end
@@ -957,6 +1107,10 @@ module UNES
           export_indoorgml
           nil
         end
+        @dialog.add_action_callback('validate') do |_action_context, _value|
+          validate_indoorgml
+          nil
+        end        
         @dialog.add_action_callback('read') do |_action_context, _value|
           indoorgml_import
           nil
@@ -977,14 +1131,51 @@ module UNES
         end
 
         # cell data를 html dialog에서 받아서 업데이트 한다.
-        @dialog.add_action_callback('updateCell') do |_action_context, value1, value2|
+        @dialog.add_action_callback('updateCell') do |_action_context, value1|
           value1.each do |d|
             puts d
           end
 
-          puts value2
+          update_cell(value1)
+          update_cell_dialog_grid
+        end
 
-          update_cell(value1, value2)
+        @dialog.add_action_callback('selectCell') do |_action_context, value1|
+          cell = get_cell_by_id(value1)
+
+          unless cell.nil?
+            Sketchup.active_model.selection.clear
+            Sketchup.active_model.selection.add cell.group
+          end
+        end
+
+        @dialog.add_action_callback('selectPoi') do |_action_context, value1|
+          poi = get_poi_by_id(value1)
+
+          unless poi.nil?
+            Sketchup.active_model.selection.clear
+            Sketchup.active_model.selection.add poi.component
+          end
+        end
+
+         # node data를 html dialog에서 받아서 업데이트 한다.
+         @dialog.add_action_callback('updateNode') do |_action_context, value1|
+          value1.each do |d|
+            puts d
+          end
+
+          update_node(value1)
+          update_node_dialog_grid
+        end
+
+        # poi data를 html dialog에서 받아서 업데이트 한다.
+        @dialog.add_action_callback('updatePoi') do |_action_context, value1|
+          value1.each do |d|
+            puts d
+          end
+
+          update_poi(value1)
+          update_poi_dialog_grid
         end
 
         @dialog.add_action_callback('getFloor') do |_action_context, value|
@@ -1024,7 +1215,7 @@ module UNES
         #   # for i in nodeLinks
         #   #   link_hash.push(i.to_hash)
         #   # end
-          
+
         #   # links.each do |ln|
         #   #   link_hash.push(ln.to_hash)
         #   # end
@@ -1056,7 +1247,7 @@ module UNES
 
         if entity.is_a?(Edge)
           entity.all_connected.each do |e|
-           unless e.is_a?(Edge)            
+           unless e.is_a?(Edge)
             UI.messagebox('라인만 가능합니다.')
             return
            end
@@ -1069,7 +1260,7 @@ module UNES
         return if node1.nil? || node2.nil?
 
         link = get_link(node1, node2)
-        
+
         return if link.nil?
 
         link.line = entity.all_connected
@@ -1077,25 +1268,106 @@ module UNES
         UI.messagebox('링크가 업데이트 되었습니다.')
       end
 
-      def update_node(nodeHash,oldName)
-        name = nodeHash['name'];
-        visible = true?(cellHash['visible'])
-      end      
+      def update_node(node_hash)
+        name = node_hash['name']
+        visible = true?(node_hash['nodeVisible'])
+        node_type = node_hash['nodeType']
+        id = node_hash['id']
 
-      def update_cell(cellHash, oldName)
-        layer = cellHash['group']
-        name = cellHash['name']
-        visible = true?(cellHash['visible'])
-        selection = cellHash['selection']
+        @nodes.each do |n|
+          next unless n.id == id
+
+          n.name = name;
+          n.component.visible = visible
+          n.node_type = node_type
+
+          x = node_hash['x'].to_f
+          y = node_hash['y'].to_f
+          z = node_hash['z'].to_f
+
+          new_transformation = Geom::Transformation.new([x, y, z])
+          n.position = Geom::Point3d.new(x, y, z)
+
+          n.component.transformation = new_transformation
+        end
+      end
+
+      def update_poi(poi_hash)
+        name = poi_hash['name']
+        visible = true?(poi_hash['poiVisible'])
+        type1 = poi_hash['type1']
+        type2 = poi_hash['type2']
+        type3 = poi_hash['type3']
+        id = poi_hash['id']
+
+        @pois.each do |p|
+          next unless p.id == id
+
+          p.name = name;
+          p.component.visible = visible
+          p.poi_type1 = type1
+          p.poi_type2 = type2
+          p.poi_type3 = type3
+
+          x = poi_hash['x'].to_f
+          y = poi_hash['y'].to_f
+          z = poi_hash['z'].to_f
+
+          new_transformation = Geom::Transformation.new([x, y, z])
+          p.position = Geom::Point3d.new(x, y, z)
+
+          p.component.transformation = new_transformation
+        end
+      end
+
+      def select_poi(id)
+      end
+
+      # cell 의 type 등을 업데이트 한다.
+      # TODO: group을 layer로 처리하게 할것
+      def update_cell(cell_hash)
+        # layer = cell_hash['group']
+        name = cell_hash['name']
+        visible = true?(cell_hash['visible'])
+        cell_type = Cell.get_cell_type_by_name(cell_hash['type'].upcase)
+
+        # selection = cell_hash['selection']
+        id = cell_hash['id']
 
         @cells.each do |c|
-          next unless c.name == oldName
+          next unless c.id == id
 
-          c.layer = layer
+          # c.layer = layer
+          c.cell_type = cell_type if cell_type != -1
+
+          if cell_type == CellType::DOOR
+            #door일 경우 색상 변경
+            c.group.material = @door_material
+            c.group.entities.each do |e|
+              next unless e.is_a?(Face)
+              e.material = @door_material
+            end
+          elsif cell_type == CellType::STAIR
+            c.group.material = @stair_material
+            c.group.entities.each do |e|
+              next unless e.is_a?(Face)
+              e.material = @stair_material
+            end
+          else
+            #아닐 경우 색상 cell로 복원
+            c.group.material = @cell_material
+            c.group.entities.each do |e|
+              next unless e.is_a?(Face)
+              e.material = @cell_material
+            end
+          end
+          
           c.name = name
           c.group.visible = visible
           break
         end
+
+        update_all_nodes if cell_type == CellType::DOOR || cell_type == CellType::STAIR
       end
 
       def create_floor_layer(floorHash)
@@ -1142,7 +1414,7 @@ module UNES
         cell.doors.each do |d|
 
           if d.face == nil && d.group != nil
-            cell_Entities.push d.group            
+            cell_Entities.push d.group
           elsif d.face != nil && d.group == nil
             cell_Entities.push d.face
 
@@ -1165,8 +1437,9 @@ module UNES
         end
       end
 
-      def save_indoorgml; end
-
+      def save_indoorgml; end     
+      
+      
       def cell_to_hash(cell)
         return nil if cell.nil?
         {
@@ -1193,11 +1466,15 @@ module UNES
         {
           id: node.id,
           name: node.name,
-          type: node.get_node_type_name,
-          group: node.layer,
-          x: node.position.x.to_f,
-          y: node.position.y.to_f,
-          z: node.position.z.to_f
+          type: node.node_type,
+          group: node.component.layer.name,
+          x: node.component.transformation.origin.x.to_f,
+          y: node.component.transformation.origin.y.to_f,
+          z: node.component.transformation.origin.z.to_f,
+          nodeVisible: node.component.visible?,
+          lat: node.anchor.position.x.to_f,
+          lon: node.anchor.position.y.to_f,
+          rotation: node.anchor.rotation.to_f
         }
       end
 
@@ -1207,10 +1484,13 @@ module UNES
         {
           id: poi.id,
           name: poi.name,
-          type: poi.get_poi_type_name,
-          x: poi.position.x.to_f,
-          y: poi.position.y.to_f,
-          z: poi.position.z.to_f
+          type1: poi.poi_type1,
+          type2: poi.poi_type2,
+          type3: poi.poi_type3,
+          x: poi.component.transformation.origin.x.to_f,
+          y: poi.component.transformation.origin.y.to_f,
+          z: poi.component.transformation.origin.z.to_f,
+          poiVisible: poi.component.visible?
         }
       end
 
@@ -1336,119 +1616,142 @@ module UNES
       def update_dialog
         return if @dialog.nil?
 
-        cell_data = nil
+        # cell_data = nil
         model = Sketchup.active_model
 
         if model.selection.size == 1
           entity = model.selection.first
+
           case @edit_mode
           when EditMode::CELL
-            if entity.is_a?(Group)
-              cell = get_cell(entity)
-
-              return if cell.nil?
-              
-              puts "cell:#{cell}"
-
-              cell_data = cell_to_hash(cell)
-              json = cell_data ? JSON.pretty_generate(cell_data) : 'null'
-              puts json
-              @dialog.execute_script("updateCellDialogProperty(#{json})")
-              # @dialog.execute_script("updateCellDialogProperty(#{cell.id})")
-
-              cell_hash = []
-
-              @cells.each do |c|
-                cell_hash.push(cell_to_hash(c))
-              end
-
-              json2 = cell_hash ? JSON.pretty_generate(cell_hash) : 'null'
-
-              @dialog.execute_script("updateCellGrid(#{json2})")
-            else
-              # 선택 하지 않았을 경우 빈 내용으로 다이얼로그를 만든다.
-              json = ''
-              @dialog.execute_script("updateCellDialogProperty(#{json})")
-            end
+            update_cell_dialog(entity)
           when EditMode::NODE
-            if entity.is_a?(ComponentInstance)
-
-              node = get_node(entity)
-
-              return if node.nil?
-
-              node_data = node_to_hash(node)
-              json = node ? JSON.pretty_generate(node_data) : 'null'
-              @dialog.execute_script("updateNode(#{json})")             
-              
-              node_hash = []
-
-              @nodes.each do |n|
-                node_hash.push(node_to_hash(n))
-              end
-
-              json2 = node_hash ? JSON.pretty_generate(node_hash) : 'null'
-              @dialog.execute_script("updateNodeGrid(#{json2})")              
-
-
-              link_hash = []
-              @links.each do |l|
-                link_hash.push(l.to_hash)
-              end
-              json3 = link_hash ? JSON.pretty_generate(link_hash) : 'null'
-              @dialog.execute_script("updateLink(#{json3})")
-            else
-              json = 'null'
-              @dialog.execute_script("updateNode(#{json})")
-            end
+            update_node_dialog(entity)
           when EditMode::POI
-            if entity.is_a?(ComponentInstance)
-              poi = get_poi(entity)
-              poi_data = poi_to_hash(poi)
-
-              json = poi_data ? JSON.pretty_generate(poi_data) : 'null'
-              @dialog.execute_script("updatePoi(#{json})")
-
-              poi_hash = []
-
-              @pois.each do |p|
-                poi_hash.push(poi_to_hash(p))
-              end
-
-              json2 = poi_hash ? JSON.pretty_generate(poi_hash) : 'null'
-              @dialog.execute_script("updatePoiGrid(#{json2})")
-            else
-              json = 'null'
-              @dialog.execute_script("updatePoi(#{json})")
-            end
-          when EditMode::DOOR
-            if entity.is_a?(Face) || entity.is_a?(Group)
-              door = get_door(entity) # face가 이미 door일 경우 존재하는 door를 반환한다.
-              puts door
-              door_data = door_to_hash(door)
-              json = door_data ? JSON.pretty_generate(door_data) : 'null'
-              puts json
-              @dialog.execute_script("updateDoor(#{json})")
-            else
-              json = 'null'
-              @dialog.execute_script("updateDoor(#{json})")
-            end
+            update_poi_dialog(entity)
+          # when EditMode::DOOR
+          #   if entity.is_a?(Face) || entity.is_a?(Group)
+          #     door = get_door(entity) # face가 이미 door일 경우 존재하는 door를 반환한다.
+          #     puts door
+          #     door_data = door_to_hash(door)
+          #     json = door_data ? JSON.pretty_generate(door_data) : 'null'
+          #     puts json
+          #     @dialog.execute_script("updateDoor(#{json})")
+          #   else
+          #     json = 'null'
+          #     @dialog.execute_script("updateDoor(#{json})")
+          #   end
           when EditMode::FLOOR
             floor_data = @building.to_hash
             json = floor_data ? JSON.pretty_generate(floor_data) : 'null'
             @dialog.execute_script("updateFloor(#{json})")
-
-
           end
         end
-      end # update_dialog
+      end
+      #update_dialog end
 
-      def export_indoorgml
-        base = UI.savepanel('Save IndoorGml File', '~', 'IndoorGml Files|*.gml;||')
-        basename = File.dirname(base) + '/' + File.basename(base, '.*')
+      def update_poi_dialog(entity)
+        if entity.is_a?(ComponentInstance)
 
-        puts base
+          update_poi_dialog_grid
 
+          poi = get_poi(entity)
+          poi_data = poi_to_hash(poi)
+
+          json = poi_data ? JSON.pretty_generate(poi_data) : 'null'
+          @dialog.execute_script("updatePoiDialogProperty(#{json})")              
+        else
+          json = ''
+          @dialog.execute_script("updatePoiDialogProperty(#{json})")
+        end
+      end
+
+      def update_poi_dialog_grid
+        poi_hash = []
+
+        @pois.each do |p|
+          poi_hash.push(poi_to_hash(p))
+        end
+
+        json2 = poi_hash ? JSON.pretty_generate(poi_hash) : 'null'
+        @dialog.execute_script("updatePoiGrid(#{json2})")
+      end
+
+      def update_node_dialog(entity)
+        if entity.is_a?(ComponentInstance)
+
+          node = get_node(entity)
+
+          return if node.nil?
+
+          puts "node:#{node}"
+
+          node_data = node_to_hash(node)
+          json = node ? JSON.pretty_generate(node_data) : 'null'
+          @dialog.execute_script("updateNodeDialogProperty(#{json})")
+
+          update_node_dialog_grid
+
+          link_hash = []
+          @links.each do |l|
+            link_hash.push(l.to_hash)
+          end
+          json3 = link_hash ? JSON.pretty_generate(link_hash) : 'null'
+          @dialog.execute_script("updateLink(#{json3})")
+        else
+          json = ''
+          @dialog.execute_script("updateNodeDialogProperty(#{json})")
+        end
+      end      
+
+      def update_node_dialog_grid
+        node_hash = []
+
+        @nodes.each do |n|
+          node_hash.push(node_to_hash(n))
+        end
+
+        json2 = node_hash ? JSON.pretty_generate(node_hash) : 'null'
+        @dialog.execute_script("updateNodeGrid(#{json2})")
+      end
+
+      def update_cell_dialog(entity)
+        if entity.is_a?(Group)
+          cell = get_cell(entity)
+
+          return if cell.nil?
+
+          puts "cell:#{cell}"
+
+          update_cell_dialog_grid
+
+          cell_data = cell_to_hash(cell)
+          json = cell_data ? JSON.pretty_generate(cell_data) : 'null'
+          puts json
+
+          @dialog.execute_script("updateCellDialogProperty(#{json})")
+          # @dialog.execute_script("updateCellDialogProperty(#{cell.id})")
+        else
+          # 선택 하지 않았을 경우 빈 내용으로 다이얼로그를 만든다.
+          json = ''
+          @dialog.execute_script("updateCellDialogProperty(#{json})")
+        end
+      end
+
+      # cell dialog의 grid를 업데이트 한다.
+      def update_cell_dialog_grid
+        cell_hash = []
+
+        @cells.each do |c|
+          cell_hash.push(cell_to_hash(c))
+        end
+
+        json2 = cell_hash ? JSON.pretty_generate(cell_hash) : 'null'
+
+        @dialog.execute_script("updateCellGrid(#{json2})")
+      end
+
+      def validate_indoorgml
         $data = ''
 
         @cells.each do |c|
@@ -1484,6 +1787,126 @@ module UNES
           # end
 
           $data.concat("####\n")
+        end
+
+        door_counter = 0;
+
+        @doors.each do |d|
+          $data.concat("door\n")
+          $data.concat("$$$$\n")
+          $data.concat("door_base_#{door_counter}\n")
+          $data.concat("$$$$\n") 
+          $data.concat("#{d.node.name}\n")
+          $data.concat("$$$$\n")
+          p = d.node.component.bounds.center
+          $data.concat("#{p.x.to_f},#{p.z.to_f},#{p.y.to_f} ")
+          $data.concat("####\n")
+        end
+
+        # puts $data
+
+        base = File.expand_path('../Plugins/validator/', __dir__)
+        base.concat('/temp.gml')
+
+        File.write('C:\\Users\\Public\\Documents\\temp_indoorgml.txt', $data)
+        path = File.expand_path('../Plugins/IndoorGmlConverter/', __dir__)
+        path.concat('/IndoorGmlConverter.exe')
+        system(path, base)
+
+        validator_path =  File.expand_path('../Plugins/validator/', __dir__)
+        report_path = validator_path.dup        
+        report_path.concat('/report')
+
+        gml_file_path = validator_path.dup
+        gml_file_path.concat('/temp.gml')
+
+        validator_path.concat('/val3dity.exe')
+
+        puts validator_path
+        puts report_path
+        puts gml_file_path
+
+        system(validator_path, gml_file_path, '--verbose', '-r', report_path)
+
+        sleep(0.5)
+
+        html_file = File.join(__dir__, 'validator/report', 'report.html')
+
+        options = {
+          dialog_title: 'Validation result',
+          preferences_key: 'unes.indoorgml.modeler',
+          style: UI::HtmlDialog::STYLE_DIALOG,
+          # Set a fixed size now that we know the content size.
+          resizable: true,
+          width: 1024,
+          height: 768
+        }
+
+        unless @dialog.nil?
+          @dialog.close
+          @dialog = nil
+        end
+
+        dialog = UI::HtmlDialog.new(options)
+        dialog.set_size(options[:width], options[:height]) # Ensure size is set.
+        dialog.set_file(html_file)
+        dialog.center
+        dialog.show
+      end
+
+      def export_indoorgml
+        base = UI.savepanel('Save IndoorGml File', '~', 'IndoorGml Files|*.gml;||')
+        basename = File.dirname(base) + '/' + File.basename(base, '.*')
+
+        puts base
+
+        $data = ''
+
+        $data.concat("version\n")
+        $data.concat("$$$$\n")
+        $data.concat("1.0\n")
+        $data.concat("####\n")
+
+        @cells.each do |c|
+          $data.concat("cell\n")
+          $data.concat("$$$$\n")
+          $data.concat("#{c.id}\n")
+          $data.concat("$$$$\n")
+          $data.concat("#{c.name}\n")
+          $data.concat("$$$$\n")          
+          $data.concat("#{c.get_cell_type_name}\n")
+          $data.concat("$$$$\n")
+          # vertices
+          c.group.entities.each do |e|
+            next unless e.is_a?(Face)
+
+            e.outer_loop.vertices.each do |v|
+              p = v.position.transform(c.group.transformation)
+              # p = v.position
+              $data.concat("#{p.x.to_f},#{p.z.to_f},#{p.y.to_f},")
+            end
+
+            p = e.outer_loop.vertices[0].position.transform(c.group.transformation)
+
+            $data.concat("#{p.x.to_f},#{p.z.to_f},#{p.y.to_f}")
+
+            $data.concat('*')
+          end
+
+          $data.concat("\n$$$$\n")
+          $data.concat("#{c.node.id}\n")
+          $data.concat("$$$$\n")
+          $data.concat("#{c.node.name}\n")
+          $data.concat("$$$$\n")
+          p = c.node.component.bounds.center.transform(c.group.transformation)
+          $data.concat("#{p.x.to_f},#{p.z.to_f},#{p.y.to_f}\n")
+
+          $data.concat("$$$$\n")
+          @cells.each do |c1|
+            $data.concat("#{c1.node.name},") if is_link_exist(c.node, c1.node)
+          end
+
+          $data.concat("\n####\n")
         end
 
         door_counter = 0;
@@ -1530,9 +1953,12 @@ module UNES
         end
 
         puts $data
+
         File.write('C:\\Users\\Public\\Documents\\temp_indoorgml.txt', $data)
-        system('C:\\Users\\Public\\Documents\\IndoorGmlConverter.exe', base)
-        # system('C:\\Users\\apple\\Documents\\Visual Studio 2017\\Projects\\IndoorGmlConverter\\IndoorGmlConverter\\bin\\Debug\\IndoorGmlConverter.exe', base)
+
+        path = File.expand_path('../Plugins/IndoorGmlConverter/', __dir__)
+        path.concat('/IndoorGmlConverter.exe')
+        system(path, base)
       end
 
       # MAIN PROCEDURE ------------------------------------------------------------------------
@@ -1676,6 +2102,13 @@ module UNES
     toolbar = UI::Toolbar.new('IndoorGML')
     toolbar.add_item(item_create_cell)
 
+    item_create_node = create_step('node', 'Create Node') do
+      # entity = Sketchup.active_model.selection.first
+      self.edit_mode = EditMode::NODE
+      show_dialog
+    end
+    toolbar.add_item(item_create_node)
+
     item_create_poi = create_step('poi', 'Create Poi') do
       # entity = Sketchup.active_model.selection.first
       self.edit_mode = EditMode::POI
@@ -1683,19 +2116,71 @@ module UNES
     end
     toolbar.add_item(item_create_poi)
 
-    item_create_door = create_step('door', 'Create Door') do
-      # entity = Sketchup.active_model.selection.first
-      self.edit_mode = EditMode::DOOR
-      show_dialog
-    end
-    toolbar.add_item(item_create_door)
+    # item_create_door = create_step('door', 'Create Door') do
+    #   # entity = Sketchup.active_model.selection.first
+    #   self.edit_mode = EditMode::DOOR
+    #   show_dialog
+    # end
+    # toolbar.add_item(item_create_door)
 
-    item_create_node = create_step('node', 'Create Node') do
+    item_create_anchor_node = create_step('anchor_node', 'Create Anchor Node') do
       # entity = Sketchup.active_model.selection.first
-      self.edit_mode = EditMode::NODE
-      show_dialog
+      
+    path = File.expand_path('../Plugins/AnchorNodeMarker/', __dir__)
+      puts path
+
+      selection = Sketchup.active_model.selection.first
+
+      if selection.nil? 
+        UI.messagebox('먼저 노드를 선택해주세요.')
+      else
+        node = get_node(selection)
+
+        unless node.nil?
+          model = Sketchup.active_model
+          model.start_operation('Test', true)
+
+          data = ''
+
+          ptsList = Array.new
+
+          @cells.each do |c|
+            group = c.group
+            trans = group.transformation
+            group.entities.each{|e|
+              if e.is_a?(Sketchup::Face)
+                pts = e.outer_loop.vertices.map{|v|v.position}
+                pts.each{|p|p.transform!(trans); p.z=0}                
+                # model.entities.add_edges(pts << pts[0])
+                ptsList.push(pts << pts[0])
+              end
+            }
+          end
+
+          ptsList.each do |ptList|
+            data.concat("@@@\n")
+            ptList.each do |p|
+              data.concat("#{p.x},#{p.y}\n")
+            end
+          end            
+          model.commit_operation            
+          
+          File.write("C:/Users/Public/Documents/outline.txt", data)
+
+          sleep(0.5)
+
+          path += '/AnchorNodeMarker.exe'
+          system(path, 'hello', 'world!')
+
+          anchor = Anchor.new
+          anchor.read("C:/Users/Public/Documents/anchor.txt")
+          node.anchor = anchor unless node.nil?
+        end
+      end
+
+      # system('C:\\Users\\apple\\Documents\\Visual Studio 2017\\Projects\\IndoorModeler\\AnchorNodeMarker\\bin\\Debug\\AnchorNodeMarker.exe', 'hello world!')
     end
-    toolbar.add_item(item_create_node)
+    toolbar.add_item(item_create_anchor_node)
 
     item_create_all = create_step('create_all', 'Create All') do
       # entity = Sketchup.active_model.selection.first
@@ -1704,11 +2189,11 @@ module UNES
     end
     toolbar.add_item(item_create_all)
 
-    item_floor = create_step('floor2', 'Manage floor') do
-      self.edit_mode = EditMode::FLOOR
-      show_dialog
-    end
-    toolbar.add_item(item_floor)
+    # item_floor = create_step('floor2', 'Manage floor') do
+    #   self.edit_mode = EditMode::FLOOR
+    #   show_dialog
+    # end
+    # toolbar.add_item(item_floor)
 
     Sketchup.add_observer(AppObserver.new) unless file_loaded?(__FILE__)
   end # module IndoorGmlModeler

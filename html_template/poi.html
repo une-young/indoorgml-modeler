@@ -19,7 +19,7 @@
 
 </head>
 
-<body>
+<body onload="initSelectLevel1();">
 
 <!--가로 패딩30px 적용 / 100%영역-->
 <div style="width:100%; padding:30px;">
@@ -66,20 +66,60 @@ $(".gml a").click(function(){
 		<span class="c_left">Name</span>
 		<span class="c_right">
 			<label for="">Name</label>
-			<input type="text" name="" id="" class="base w100" placeholder="" value=""/>
+			<input type="text" name="" id="input_poi_name" class="base w100" placeholder="" value=""/>
 		</span>
 	</div>
 
 	<div class="line_form">
-		<span class="c_left">POI Type</span>
-		<span class="c_right mid"><a href="#"><img src="images/bt_type.png"></a></span>
+		<span class="c_left">POI Type1</span>
+		<span class="c_right">
+			<label for="search">Type</label>
+			<select class="base w100 ar" id="select_poi_type1" onchange="onSelectPoiTypeChanged(this);">
+				<option selected>Type</option>
+				<option>Space</option>
+				<option>Door</option>
+				<option>Window</option>
+				<option>Elevator</option>
+				<option>Stair</option>
+			</select>
+		</span>
+	</div>
+
+	<div class="line_form">
+		<span class="c_left">POI Type2</span>
+		<span class="c_right">
+			<label for="search">Type</label>
+			<select class="base w100 ar" id="select_poi_type2" onchange="onSelectPoiTypeChanged(this);">
+				<option selected>Type</option>
+				<option>Space</option>
+				<option>Door</option>
+				<option>Window</option>
+				<option>Elevator</option>
+				<option>Stair</option>
+			</select>
+		</span>
+	</div>
+
+	<div class="line_form">
+		<span class="c_left">POI Type3</span>
+		<span class="c_right">
+			<label for="search">Type</label>
+			<select class="base w100 ar" id="select_poi_type3" onchange="onSelectPoiTypeChanged(this);">
+				<option selected>Type</option>
+				<option>Space</option>
+				<option>Door</option>
+				<option>Window</option>
+				<option>Elevator</option>
+				<option>Stair</option>
+			</select>
+		</span>
 	</div>
 
 	<div class="line_form">
 		<span class="c_left">X-Coordinate</span>
 		<span class="c_right">
 			<label for="">X-Coordinate</label>
-			<input type="text" name="" id="" class="base w100" placeholder="" value=""/>
+			<input type="text" name="" id="input_poi_xcoordinate" class="base w100" placeholder="" value=""/>
 		</span>
 	</div>
 
@@ -87,7 +127,7 @@ $(".gml a").click(function(){
 		<span class="c_left">Y-Coordinate</span>
 		<span class="c_right">
 			<label for="">Y-Coordinate</label>
-			<input type="text" name="" id="" class="base w100" placeholder="" value=""/>
+			<input type="text" name="" id="input_poi_ycoordinate" class="base w100" placeholder="" value=""/>
 		</span>
 	</div>
 
@@ -116,63 +156,8 @@ $(".gml a").click(function(){
 				<col style="width:15%"/>
 			</colgroup>
 
-			<tbody>
-			<tr>
-				<td class="al_center"><label for="">check</label><input type="checkbox" id="" name=""></td>
-				<td class="al_center">A POI</td>
-				<td class="al_center">type1</td>
-				<td class="al_center">type2</td>
-				<td class="al_center">type3</td>
-				<td class="al_center"><img src="images/show_s.png" style="vertical-align:center"></td>
-			</tr>
-			<tr>
-				<td class="al_center"><label for="">check</label><input type="checkbox" id="" name=""></td>
-				<td class="al_center">A POI</td>
-				<td class="al_center">type1</td>
-				<td class="al_center">type2</td>
-				<td class="al_center">type3</td>
-				<td class="al_center"><img src="images/show_s.png" style="vertical-align:center"></td>
-			</tr>
-			<tr>
-				<td class="al_center"><label for="">check</label><input type="checkbox" id="" name=""></td>
-				<td class="al_center">A POI</td>
-				<td class="al_center">type1</td>
-				<td class="al_center">type2</td>
-				<td class="al_center">type3</td>
-				<td class="al_center"><img src="images/show_s.png" style="vertical-align:center"></td>
-			</tr>
-			<tr>
-				<td class="al_center"><label for="">check</label><input type="checkbox" id="" name=""></td>
-				<td class="al_center">A POI</td>
-				<td class="al_center">type1</td>
-				<td class="al_center">type2</td>
-				<td class="al_center">type3</td>
-				<td class="al_center"><img src="images/show_s.png" style="vertical-align:center"></td>
-			</tr>
-			<tr>
-				<td class="al_center"><label for="">check</label><input type="checkbox" id="" name=""></td>
-				<td class="al_center">A POI</td>
-				<td class="al_center">type1</td>
-				<td class="al_center">type2</td>
-				<td class="al_center">type3</td>
-				<td class="al_center"><img src="images/show_s.png" style="vertical-align:center"></td>
-			</tr>
-			<tr>
-				<td class="al_center"><label for="">check</label><input type="checkbox" id="" name=""></td>
-				<td class="al_center">A POI</td>
-				<td class="al_center">type1</td>
-				<td class="al_center">type2</td>
-				<td class="al_center">type3</td>
-				<td class="al_center"><img src="images/show_s.png" style="vertical-align:center"></td>
-			</tr>
-			<tr>
-				<td class="al_center"><label for="">check</label><input type="checkbox" id="" name=""></td>
-				<td class="al_center">A POI</td>
-				<td class="al_center">type1</td>
-				<td class="al_center">type2</td>
-				<td class="al_center">type3</td>
-				<td class="al_center"><img src="images/show_s.png" style="vertical-align:center"></td>
-			</tr>
+			<tbody id="poi_grid_table_body">
+			
 			</tbody>
 
 		</table>
@@ -182,8 +167,9 @@ $(".gml a").click(function(){
 
 	<!--하단 버튼-->
 	<ul class="btn_group">
-		<li><a href="#" class="ok" style=""><img src="images/ic_ok.png" class="lk">OK</a></li>
-		<li><a href="#" class="cancle"><img src="images/ic_cancle.png" class="lk">Cancle</a></li>
+		<li><a href="#" class="ok" onclick="sketchup.createPoi();"><img src="images/ic_ok.png" class="lk">Create</a></li>		
+		<li><a href="#" class="cancle" onclick="updateSketchupPoi();">Update</a></li>
+		<!--<li><a href="#" class="cancle"><img src="images/ic_cancle.png" class="lk">Cancle</a></li>-->
 	</ul>
 	<!--//하단 버튼-->
 
@@ -205,4 +191,283 @@ $(".gml a").click(function(){
 
 
 </body>
+<script>	
+	function UpdateGrid() {
+		var data = "";
+
+		for (var i = 0; i < gridData.length; i++) {
+
+			data += "<td class='al_center'><label for=''>check</label><input type='checkbox' onclick='poiGridCheckboxClicked(this);' id='" +
+				"poi_grid_check_" + i + "' name='' " + (gridData[i]["selection"] ? "checked" : "") + "></td>" +
+				"<td class='al_center'>"+ gridData[i]["name"] +"</td>" +
+				"<td class='al_center'>"+ gridData[i]["type1"] +"</td>" +
+				"<td class='al_center'>"+ gridData[i]["type2"] +"</td>" +
+				"<td class='al_center'>"+ gridData[i]["type3"] +"</td>" +
+				"<td class='al_center'><img id=" + "poi_" + i + " src='" + gridData[i]["visibleImage"] +
+				"' style='vertical-align:center' onclick='poi_visibility_click(" + i + ")'></td></tr>";			
+		}
+
+		document.getElementById("poi_grid_table_body").innerHTML = data;
+	}
+
+	function poi_visibility_click(index) {
+		var visibility_image = document.getElementById("poi_" + index);
+
+		var d = gridData[index];
+
+		if (visibility_image.src.indexOf("images/show_s.png") != -1) {
+			visibility_image.src = "images/hide_s.png";
+			d["visibleImage"] = "images/hide_s.png";
+			d["poiVisible"] = false;
+		}
+		else {
+			visibility_image.src = "images/show_s.png";
+			d["visibleImage"] = "images/show_s.png";
+			d["poiVisible"] = true;
+		}
+
+		//poi의  visibility도 update 한다.		
+		sketchup.updatePoi(d);
+	}
+
+	//poi grid의 체크 박스를 클릭 했을때의 처리.
+	function poiGridCheckboxClicked(obj) {
+		if(obj.checked) {
+			//uncheck another items
+			for(var i=0;i<gridData.length;i++) {
+				var targetObj = document.getElementById("poi_grid_check_" + i);
+
+				if(targetObj === obj) {
+					updatePoiDialogProperty(gridData[i]);
+					sketchup.selectPoi(gridData[i].id);
+				} else {
+					targetObj.checked = false;
+				}
+			}
+		} 	
+		else {
+			updatePoiDialogProperty(undefined);
+		}	
+	}
+
+	var gridData = [];
+	var currentPoiGridData = null;
+
+	function updatePoiGrid(poiGridData) {
+		
+		if (undefined != poiGridData && undefined != gridData) {
+			gridData = [];
+			for (var i = 0; i < poiGridData.length; i++) {
+				var gridItem = poiGridData[i];
+
+				var d = (gridData[i] = {});
+
+				d["id"] = gridItem.id;
+
+				if(currentPoiGridData != null && currentPoiGridData["id"] === d["id"]) {
+					d["selection"] = true;
+				} else {
+					d["selection"] = false;
+				}
+				
+				d["name"] = gridItem.name;
+				d["type1"] = gridItem.type1;
+				d["type2"] = gridItem.type2;
+				d["type3"] = gridItem.type3;				
+				d["poiVisible"] = gridItem.poiVisible;
+				d["visibleImage"] = gridItem.poiVisible ? "images/show_s.png" : "images/hide_s.png";
+				d["x"] = gridItem.x;
+				d["y"] = gridItem.y;
+				d["z"] = gridItem.z;				
+			}
+
+			UpdateGrid();
+		}
+	}
+
+	function updateSketchupPoi() {
+		var poiName = document.getElementById("input_poi_name");
+		currentPoiGridData.name = poiName.value;
+
+		var poiType1 = document.getElementById("select_poi_type1");		
+		currentPoiGridData.type1 = poiType1.value;
+
+		var poiType2 = document.getElementById("select_poi_type2");		
+		currentPoiGridData.type2 = poiType2.value;
+
+		var poiType3 = document.getElementById("select_poi_type3");		
+		currentPoiGridData.type3 = poiType3.value;
+		
+		var x = document.getElementById("input_poi_xcoordinate");
+		var y = document.getElementById("input_poi_ycoordinate");
+
+		currentPoiGridData.x = x.value;
+		currentPoiGridData.y = y.value;
+		
+		sketchup.updatePoi(currentPoiGridData);
+	}	
+
+	function updatePoiDialogProperty(poi) {
+		// if ('' == poi) {
+		// 	return;
+		// }			
+
+		currentPoiGridData = poi;
+
+		var poiName = document.getElementById("input_poi_name");
+
+		if (undefined != poiName) {
+			poiName.value = poi.name === undefined ? '' : poi.name;
+		}
+
+		var poiType1 = document.getElementById("select_poi_type1");
+		var poiType2 = document.getElementById("select_poi_type1");
+		var poiType3 = document.getElementById("select_poi_type1");
+
+		for(var i=0;i<poiType1.options.length;i++) {
+			if(poiType1.options.value === poi.type1) {
+				poiType1.selectedIndex = i;
+				onSelectPoiTypeChanged(poiType1);
+
+				for(var j=0;j<poiType2.options.length;j++) {
+					if(poiType2.options.value === poi.type2) {
+						poiType2.selectedIndex = j;
+						onSelectPoiTypeChanged(poiType2);
+						for(var k=0;k<poiType3.options.length;k++) {
+							if(poiType3.options.value === poi.type3) {
+								poiType3.selectedIndex = k;
+							}						
+							break;
+						}
+						break;
+					}
+				}
+				break;
+			}
+		}
+
+		var x = document.getElementById("input_poi_xcoordinate");
+
+		if (x != undefined) {
+			x.value = poi.x === undefined ? '' : poi.x;;
+		}
+
+		var y = document.getElementById("input_poi_ycoordinate");
+
+		if (y != undefined) {
+			y.value = poi.y === undefined ? '' : poi.y;;
+		}
+	}	
+
+	var level1List = [];
+	var level2List = [];
+	var level3List = [];
+
+	initPoiTypeData();
+
+	function initPoiTypeData() {
+		level1List = ["Place","Things", "Retail/Services","Safety","Security","Event"];
+		level2List = [["Pedestrian","Private","Relaxation"],["Access facility","Conveyor transport"],["Services"," Retial"],["fire-fighting supplies","emergency relief supplies","evacuation facility"],["Temporal"," Type"]];
+		level3List = [["stairs","slope way ","lobby"],["common room"],["relaxation room","smoking area","men’s toilet","women’s toilet","disabled toilet","bench","Rubbish bin"],
+		["Door","ticket gate","access control units"],["up escalator","down escalator","up moving sidewalk","down moving sidewalk","horizontal moving sidewalk","elevator","wheelchair lift "],
+		["nursery ","drug store","vending machine ","ticket machine","Information","Lounge","guest room","covered car park","Bank","cash office","cash machine or ATM","post office"],
+		["restaurant","coffee shop","clothing store","hair shop","ticket office","Aquarium","bowling alley","swimming-pool","store"],["fire protection appliance","fire extinguishing system","fire extinguisher","fire alarm"],
+		["automated external defibrillator","life-saving trolley "],["Shelter","emergency call center","Door","emergency escape device","relief goods"],["time"],["Fire","Earthquake","Power outage","Safety accident"]];
+	}
+
+	function getLevel2List(level1) {
+		for(var i=0;i<level1List.length;i++) {
+			if(level1List[i] == level1) {
+				return level2List[i];
+			}
+		}
+
+		return null;
+	}
+
+	function getLevel2Index(level2) {
+		var counter = 0;
+
+		for(var i=0;i<level2List.length;i++) {
+			var level2Sub = level2List[i];
+
+			for(var k=0;k<level2Sub.length;k++) {
+				if(level2Sub[k] == level2) {
+					return counter;
+				}
+				counter++;
+			}			
+		}
+
+		return -1;
+	}
+
+	function getLevel3List(level2) {
+		var level2Index = getLevel2Index(level2);
+
+		if(level2Index != -1) {
+			return level3List[level2Index];
+		}
+
+		return null;
+	}
+
+	function onSelectPoiTypeChanged(poiTypeSelect) {
+		if(poiTypeSelect.id === "select_poi_type1") {
+			initSelectLevel2(poiTypeSelect.options[poiTypeSelect.selectedIndex].value);
+			var selectType2 = document.getElementById("select_poi_type2");
+			initSelectLevel3(selectType2.options[selectType2.selectedIndex].value);
+		} else if(poiTypeSelect.id === "select_poi_type2") {
+			initSelectLevel3(poiTypeSelect.options[poiTypeSelect.selectedIndex].value);
+		} else if(poiTypeSelect.id === "select_poi_type3") {
+
+		}
+	}
+
+	function initSelectLevel3(level2) {
+		var selectType3 = document.getElementById("select_poi_type3");
+
+		var level3 = getLevel3List(level2);
+
+		selectType3.options.length = 0;
+
+		for(var i=0;i<level3.length;i++) {
+			var op = new Option();
+			op.value = level3[i];
+			op.text = level3[i];
+			selectType3.options.add(op);
+		}			
+	}
+
+	function initSelectLevel2(level1) {
+		var selectType2 = document.getElementById("select_poi_type2");
+
+		var level2 = getLevel2List(level1);
+
+		selectType2.options.length = 0;
+
+
+
+		for(var i=0;i<level2.length;i++) {
+			var op = new Option();
+			op.value = level2[i];
+			op.text = level2[i];
+			selectType2.options.add(op);
+		}			
+	}
+
+	function initSelectLevel1() {
+		var selectType1 = document.getElementById("select_poi_type1");
+		selectType1.options.length = 0;
+
+		for(var i=0;i<level1List.length;i++) {
+			var op = new Option();
+			op.value = level1List[i];
+			op.text = level1List[i];
+			document.getElementById("select_poi_type1").options.add(op);
+		}			
+
+		onSelectPoiTypeChanged(selectType1);
+	}
+</script>
 </html>

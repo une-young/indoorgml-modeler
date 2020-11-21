@@ -129,9 +129,9 @@
 				<!--기능버튼-->
 				<ul class="btn_function">
 					<li><a href="#"><img src="images/btn_create.png" alt="All Create"></a></li>
-					<li><a href="#"><img src="images/btn_import.png" alt="Import"></a></li>
-					<li><a href="#"><img src="images/btn_validation.png" alt="Validation"></a></li>
-					<li><a href="#"><img src="images/btn_export.png" alt="Export"></a></li>
+					<li><a href="#"><img src="images/btn_import.png" alt="Import" onclick="sketchup.read();"></a></li>
+					<li><a href="#"><img src="images/btn_validation.png" alt="Validation" onclick="sketchup.validate();"></a></li>
+					<li><a href="#"><img src="images/btn_export.png" alt="Export" onclick="sketchup.save();"></a></li>
 				</ul>
 				<!--//기능버튼-->
 
@@ -163,11 +163,12 @@
 			var d = (gridData[i] = {});
 
 			//d["selection"] = i % 5 == 0 ? "checked" : "";
-			d["selection"] = "";
+			d["selection"] = false;
 			d["name"] = "Cell " + i;
 			d["type"] = i % 3 == 0 ? "Door" : "Cell";
 			d["group"] = "group 1";
-			d["visible"] = i % 3 == 0 ? "images/show_s.png" : "images/hide_s.png";
+			d["visible"] = i % 3 == 0;
+			d["visibleImage"] = d["visible"] ? "images/show_s.png" : "images/hide_s.png";
 		}
 	}
 
@@ -177,11 +178,13 @@
 
 		for (var i = 0; i < gridData.length; i++) {
 			data += "<tr>" +
-				"<td class='al_center'><label for=''>check</label><input type='checkbox' onclick='cellGridCheckboxClicked(this);' id='" + "cell_grid_check_"+i + "' name='' " + gridData[i]["selection"] + "></td>" +
+				"<td class='al_center'><label for=''>check</label><input type='checkbox' onclick='cellGridCheckboxClicked(this);' id='" + 
+					"cell_grid_check_"+i + "' name='' " + (gridData[i]["selection"] ? "checked" : "") + "></td>" +
 				"<td class='al_center'>" + gridData[i]["name"] + "</td>" +
 				"<td class='al_center'>" + gridData[i]["type"] + "</td>" +
 				"<td class='al_center'>" + gridData[i]["group"] + "</td>" +
-				"<td class='al_center'><img id=" + "cell_" + i + " src='" + gridData[i]["visible"] + "' style='vertical-align:center' onclick='cell_visibility_click(" + i + ")'></td>" +
+				"<td class='al_center'><img id=" + "cell_" + i + " src='" + gridData[i]["visibleImage"] + 
+					"' style='vertical-align:center' onclick='cell_visibility_click(" + i + ")'></td>" +
 				"</tr>";
 		}
 
@@ -197,6 +200,7 @@
 
 				if(targetObj === obj) {
 					updateCellDialogProperty(gridData[i]);
+					sketchup.selectCell(gridData[i].id);
 				} else {
 					targetObj.checked = false;
 				}
@@ -210,19 +214,28 @@
 	function cell_visibility_click(index) {
 		var visibility_image = document.getElementById("cell_" + index);
 
+		var d = gridData[index];
+
 		if (visibility_image.src.indexOf("images/show_s.png") != -1) {
 			visibility_image.src = "images/hide_s.png";
+			d["visibleImage"] = "images/hide_s.png";
+			d["visible"] = false;
 		}
 		else {
 			visibility_image.src = "images/show_s.png";
+			d["visibleImage"] = "images/show_s.png";
+			d["visible"] = true;
 		}
+
+		//cell의  visibility도 update 한다.		
+		sketchup.updateCell(d);
 	}
 
 	function updateCellDialogProperty(cellInfo) {
 
 		var cellId;
 
-		if(cellInfo === null || cellInfo.length === 0) {
+		if(cellInfo === null || cellInfo["id"] === undefined) {
 			cellId = "";
 			currentCellGridData = null;
 		} else {
@@ -247,6 +260,18 @@
 			inputTextCellName.value = d["name"];
 			//TODO:
 			inputTextGroupName.value = d["group"];
+
+			for (var i = 0; i < gridData.length; i++) {
+				var gridItem = gridData[i];
+				
+				if(currentCellGridData != null > 0 && currentCellGridData["id"] === gridItem["id"]) {
+					gridItem["selection"] = true;
+				} else {
+					gridItem["selection"] = false;
+				}
+			}
+
+			UpdateGrid();
 		}
 	}
 
@@ -273,15 +298,16 @@
 				d["id"] = gridItem.id;
 
 				if(currentCellGridData != null > 0 && currentCellGridData["id"] === d["id"]) {
-					d["selection"] = "checked";
+					d["selection"] = true;
 				} else {
-					d["selection"] = "";
+					d["selection"] = false;
 				}
 				
 				d["name"] = gridItem.name;
 				d["type"] = gridItem.type;
 				d["group"] = gridItem.layer;
-				d["visible"] = gridItem.visible ? "images/show_s.png" : "images/hide_s.png";;
+				d["visible"] = gridItem.visible;
+				d["visibleImage"] = gridItem.visible ? "images/show_s.png" : "images/hide_s.png";;				
 			}			
 		}
 
@@ -294,6 +320,10 @@
 	}
 
 	function updateCellTypeCombobox(cellType) {
+		
+		if(cellType == undefined)
+			return;
+
 		var selectCellType = document.getElementById("select_cell_type");		
 
 		var options = selectCellType.options;
@@ -308,12 +338,42 @@
 		selectCellType.selectedIndex = 0;
 	}	
 
+	//cell type이 변경 되었을 때의 처리.
 	function onSelectCellTypeChanged(selectCellType) {
-		if(currentCellGridData != null) {
-			currentCellGridData["type"] = selectCellType.options[selectCellType.selectedIndex];
+
+
+		//FIXME: Type 부분을 없애는게 나을듯.
+
+		if(0 == selectCellType.selectedIndex) {
+			return;
+		}
+
+		var selectedCellType = selectCellType.options[selectCellType.selectedIndex].value;
+		
+		if(currentCellGridData != null && currentCellGridData["type"] != selectedCellType) {
+			currentCellGridData["type"] = selectCellType.options[selectCellType.selectedIndex].value;
 
 			sketchup.updateCell(currentCellGridData);
 		}
+	}
+
+	function updateSketchupCell(cellGridData) {
+		var cellData = cellGridDataToSketchUp(cellGridData);
+
+		sketchup.updateCell(cellData);
+	}
+
+	function cellGridDataToSketchUp(cellGridData) {
+		var d = [];
+		  
+		d["id"] = cellGridData["id"];
+		d["name"] = cellGridData["name"];
+		d["type"] = cellGridData["type"];
+		d["group"] = cellGridData["group"];	
+		d["visible"] = cellGridData["visible"];
+		d["selection"] = cellGridData["selection"];
+
+		return d;
 	}
 
 </script>

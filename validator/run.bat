@@ -1,0 +1,1 @@
+val3dity "temp.gml" --verbose -r ".\report"
