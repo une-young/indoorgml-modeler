@@ -57,7 +57,7 @@ $(".gml a").click(function(){
 	<div class="line_form">
 		<span class="c_left">POI hiding</span>
 		<span class="c_right mid">
-			<input type="checkbox" id="4" name="" class="onoff">
+			<input type="checkbox" id="4" name="" class="onoff" onclick="onClickCheckBoxPoiVisibility(this);">
 			<label for="4"class="onoff"><span class="hide">선택</span></label>
 		</span>
 	</div>
@@ -192,6 +192,11 @@ $(".gml a").click(function(){
 
 </body>
 <script>	
+	$(document).ready(function(){
+		//cell grid를 업데이트 한다.
+		sketchup.ready();
+	});
+
 	function UpdateGrid() {
 		var data = "";
 
@@ -286,6 +291,9 @@ $(".gml a").click(function(){
 	}
 
 	function updateSketchupPoi() {
+		if( null == currentPoiGridData)
+			return;
+
 		var poiName = document.getElementById("input_poi_name");
 		currentPoiGridData.name = poiName.value;
 
@@ -308,54 +316,57 @@ $(".gml a").click(function(){
 	}	
 
 	function updatePoiDialogProperty(poi) {
-		// if ('' == poi) {
-		// 	return;
-		// }			
-
-		currentPoiGridData = poi;
+		if (undefined == poi || '' == poi) {
+			currentPoiGridData = null;			
+		 }
+		 else {
+			currentPoiGridData = poi;		
+		 }		
 
 		var poiName = document.getElementById("input_poi_name");
 
 		if (undefined != poiName) {
-			poiName.value = poi.name === undefined ? '' : poi.name;
+			poiName.value = poi === undefined ? '' : poi.name;
 		}
 
 		var poiType1 = document.getElementById("select_poi_type1");
 		var poiType2 = document.getElementById("select_poi_type1");
 		var poiType3 = document.getElementById("select_poi_type1");
 
-		for(var i=0;i<poiType1.options.length;i++) {
-			if(poiType1.options.value === poi.type1) {
-				poiType1.selectedIndex = i;
-				onSelectPoiTypeChanged(poiType1);
+		if(poi != undefined) {
+			for(var i=0;i<poiType1.options.length;i++) {
+				if(poiType1.options.value === poi.type1) {
+					poiType1.selectedIndex = i;
+					onSelectPoiTypeChanged(poiType1);
 
-				for(var j=0;j<poiType2.options.length;j++) {
-					if(poiType2.options.value === poi.type2) {
-						poiType2.selectedIndex = j;
-						onSelectPoiTypeChanged(poiType2);
-						for(var k=0;k<poiType3.options.length;k++) {
-							if(poiType3.options.value === poi.type3) {
-								poiType3.selectedIndex = k;
-							}						
+					for(var j=0;j<poiType2.options.length;j++) {
+						if(poiType2.options.value === poi.type2) {
+							poiType2.selectedIndex = j;
+							onSelectPoiTypeChanged(poiType2);
+							for(var k=0;k<poiType3.options.length;k++) {
+								if(poiType3.options.value === poi.type3) {
+									poiType3.selectedIndex = k;
+								}						
+								break;
+							}
 							break;
 						}
-						break;
 					}
+					break;
 				}
-				break;
-			}
-		}
+			}	
+		}		
 
 		var x = document.getElementById("input_poi_xcoordinate");
 
 		if (x != undefined) {
-			x.value = poi.x === undefined ? '' : poi.x;;
+			x.value = poi === undefined ? '' : poi.x;;
 		}
 
 		var y = document.getElementById("input_poi_ycoordinate");
 
 		if (y != undefined) {
-			y.value = poi.y === undefined ? '' : poi.y;;
+			y.value = poi === undefined ? '' : poi.y;;
 		}
 	}	
 
@@ -454,6 +465,10 @@ $(".gml a").click(function(){
 			op.text = level2[i];
 			selectType2.options.add(op);
 		}			
+	}
+
+	function onClickCheckBoxPoiVisibility(checkbox) {
+		sketchup.setPoiVisibility(checkbox.checked.toString());
 	}
 
 	function initSelectLevel1() {

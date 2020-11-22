@@ -44,6 +44,7 @@ module UNES
       attr_writer :parent
       attr_reader :component
       attr_writer :component
+      attr_accessor :component_id
       attr_reader :node_type
       attr_writer :node_type
       attr_reader :anchor
@@ -58,6 +59,7 @@ module UNES
         @parent = nil
         # node의 형상 entity (Component)
         @component = nil
+        @component_id = nil
         @node_type = 'NORMAL'
         @anchor = Anchor.new
       end
@@ -79,14 +81,14 @@ module UNES
       def read(file_path)
         lines = File.readlines(file_path)
 
-        if !lines.nil? && lines.length == 3
-          x = lines[0].to_f
-          y = lines[1].to_f
-          rotation = lines[2].to_f
+        return unless !lines.nil? && lines.length == 3
 
-          @position = Geom::Point3d.new(x, y, 0)
-          @rotation = rotation
-        end
+        x = lines[0].to_f
+        y = lines[1].to_f
+        rotation = lines[2].to_f
+
+        @position = Geom::Point3d.new(x, y, 0)
+        @rotation = rotation
       end
 
       def write(file_path, id)
@@ -165,6 +167,7 @@ module UNES
         @doors = []
         @nodes = []
         @pois = []
+
         @layer = nil
         @height = height
         @elevation = elevation
@@ -240,6 +243,7 @@ module UNES
       attr_writer :node
       attr_reader :layer
       attr_writer :layer
+      attr_accessor :group_id
 
       @@cell_type_names = %w[SPACE DOOR WINDOW ELEVATOR STAIR]
 
@@ -251,6 +255,7 @@ module UNES
         @node = nil
         # layer는 그냥 text 이름임
         @layer = 'group 0'
+        @group_id = nil
       end
 
       def get_cell_type_name
@@ -395,7 +400,6 @@ module UNES
       attr_reader :position
       attr_writer :position
 
-
       # @@poi_type_names = %w[NONE SPACE ETC]
 
       def initialize
@@ -414,8 +418,44 @@ module UNES
     end
 
     class IndoorGmlEntitiesObserver < EntitiesObserver
+      MAIN = UNES::IndoorGmlModeler
+
       def onElementAdded(entities, entity)
-        puts "onElementAdded: #{entity.entityID }"
+        return if entity.deleted?
+
+        puts "onElementAdded: #{entity.entityID}"
+
+        return if MAIN.deleted_cells.nil? || MAIN.deleted_cells.empty?
+
+        cell = MAIN.deleted_cells[entity.entityID]
+
+        return if cell.nil?
+
+        restore_cell(entity, cell)
+
+        node_component = cell.group.entities.select { |e| e.entityID == cell.node.component_id }
+
+        node = MAIN.deleted_nodes[node_component[0].entityID]
+
+        return if node.nil?
+
+        restore_node(node_component[0], node)
+      end
+
+      def restore_cell(entity, cell)
+        puts cell
+        MAIN.cells.push(cell) unless cell.nil?
+        puts "cell count:#{MAIN.cells.length}"
+        MAIN.deleted_cells.delete(entity.entityID)
+        cell.group = entity
+      end
+
+      def restore_node(entity, node)
+        puts node
+        MAIN.nodes.push(node) unless node.nil?
+        puts "node count:#{MAIN.nodes.length}"
+        MAIN.deleted_nodes.delete(entity.entityID)
+        node.component = entity
       end
 
       def onElementModified(entities, entity)
@@ -424,19 +464,44 @@ module UNES
 
       def onElementRemoved(entities, entity_id)
         puts "onElementRemoved: #{entity_id}"
-      end
-    end
 
-    class DoorObserver < Sketchup::EntityObserver
-      attr_reader :door
-      attr_writer :door
+        cell = MAIN.cells.select { |c| c.group.deleted? }
 
-      @door = nil
-      def onEraseEntity(entity)
-        if entity.is_a?(Face)
-          face = Sketchup.active_model.entities.add_face @door.face_vertices
-          @door.face = face
+        return if cell.nil? || cell.empty?
+
+        if cell.is_a?(Array)
+          cell.each do |c|
+            deleteCell(entity_id, c)
+          end
+        else
+          deleteCell(entity_id, cell)
         end
+
+        node = MAIN.nodes.select { |n| n.component.deleted? }
+
+        return if node.nil?
+
+        if node.is_a?(Array)
+          node.each do |n|
+            deleteNode(n.component_id, n)
+          end
+        else
+          deleteNode(n.component_id, node)
+        end
+      end
+
+      def deleteCell(entity_id, cell)
+        puts cell
+        MAIN.cells.delete(cell) unless cell.nil?
+        puts "cell count:#{MAIN.cells.length}"
+        MAIN.deleted_cells[entity_id] = cell
+      end
+
+      def deleteNode(entity_id, node)
+        puts node
+        MAIN.nodes.delete(node) unless node.nil?
+        puts "node count:#{MAIN.nodes.length}"
+        MAIN.deleted_nodes[entity_id] = node
       end
     end
 
@@ -444,26 +509,34 @@ module UNES
       MAIN = UNES::IndoorGmlModeler
 
       def onChangeEntity(entity)
-        if entity.is_a?(Group)
-          cell = MAIN.find_cell_by_group entity
+        return if entity.deleted?
 
-          MAIN.links.each do |l|
-            l.update_line if l.node1 == cell.node
+        return unless entity.is_a?(Group)
 
-            l.update_line if l.node2 == cell.node
-          end
+        cell = MAIN.find_cell_by_group_id entity.entityID
+
+        MAIN.links.each do |l|
+          l.update_line if l.node1 == cell.node
+
+          l.update_line if l.node2 == cell.node
         end
       end
 
-      def onEraseEntity(entity)
-        if entity.is_a?(Group)
-          cell = MAIN.find_cell_by_group entity
+      # 이미 entity가 삭제가 된 상태이기 때문에 참조를 하면 안된다
+      # def onEraseEntity(entity)      
+      #   # return unless entity.is_a?(Group)
 
-          MAIN.cells.delete(cell) unless cell.nil?
+      #   # cell = MAIN.find_cell_by_group_id entity.entityID
 
-          puts MAIN.cells.length
-        end
-      end
+      #   # MAIN.cells.delete(cell) unless cell.nil?
+      #   # MAIN.nodes.delete(cell.node) unless cell.node.nil?
+
+      #   # puts "cell count:#{MAIN.cells.length}"
+      #   # puts "node count:#{MAIN.nodes.length}"
+
+      #   # deleted_cells[entity.entityID] = cell
+      #   # deleted_nodes[cell.node.component.endityID] = node
+      # end
     end
 
     class SelectionChangeObserver < Sketchup::SelectionObserver
@@ -518,10 +591,13 @@ module UNES
     class << self
       attr_reader :cells
       attr_writer :cells
+      attr_accessor :nodes
       attr_reader :doors
       attr_writer :doors
       attr_reader :links
       attr_writer :links
+      attr_accessor :deleted_cells
+      attr_accessor :deleted_nodes
 
       attr_reader :edit_mode
       attr_writer :edit_mode
@@ -554,6 +630,11 @@ module UNES
         @floor_creation_count = 0
         @edit_mode = EditMode::NONE
         @building = Building.new
+
+        # 삭제된 cell,node들 (unde/redo 대책)
+        # key는 entityID
+        @deleted_cells = {}
+        @deleted_nodes = {}
 
         floor = Floor.new(3.5 / 1.to_m, 0) # 1층
         floor.name = @name = "Floor#{@floor_creation_count}"
@@ -611,7 +692,7 @@ module UNES
 
       def get_links_by_node(node)
         node_links = []
-        
+
         @links.each do |l|
           if l.node1.name == node.name || l.node2.name == node.name
             node_links.push(l) 
@@ -628,8 +709,9 @@ module UNES
 
         false
       end
-      
-      #TODO: 함수가 너무 길어서 줄여야 할듯.
+
+      # TODO: 함수가 너무 길어서 줄여야 할듯.
+      # TODO: You shoude shorten this function.
       def create_cell(entity)
         cell = nil
         if entity.is_a?(Face)
@@ -667,10 +749,12 @@ module UNES
           group_name = cell.group.name
 
           # node를 cell 그룹에 추가
+          # add node to cell group
           a = (cell.group.explode.find_all { |e| e if e.respond_to?(:bounds) }).uniq
           a.push node.component
           group = Sketchup.active_model.entities.add_group a
           cell.group = group
+          cell.group_id = group.entityID
           cell.node = node
           # cell.group.name = "#{cell.name}@@@#{cell.id}"
           cell.group.name = group_name
@@ -687,12 +771,16 @@ module UNES
         end
 
         # node link 갱신
+        # update node-link
+        # space cell 이라고 해도 옆에 door나 stair cell이 있을 경우 처리를 해야 하기 때문에 호출 해야 한다.
+        # You shoude call 'update_all_nodes' even if cell type is SPACE. because, There are another door or stair cells.
         update_all_nodes
 
         cell
       end
 
       # 모든 node-link를 갱신한다. door의 경우 인접 cell과 연결한다.
+      # Update all node-links. If cell type is a door, link adjacented cells
       def update_all_nodes
         @nodes.each do |n|
           next unless n.parent.is_a?(Cell)
@@ -745,9 +833,10 @@ module UNES
         intersected
       end
 
-      def find_cell_by_group(group)
+      def find_cell_by_group_id(entityID)
         @cells.each do |c|
-          return c if c.group == group
+          next if c.group.deleted?
+          return c if c.group.entityID == entityID
         end
 
         nil
@@ -773,6 +862,7 @@ module UNES
         node.parent = element
         element.node = node
         node.component = instance
+        node.component_id = instance.entityID
         node.position = center
 
         @node_creation_count += 1
@@ -916,7 +1006,7 @@ module UNES
         door = Door.new
         door.face = face
         door.face_vertices = face.outer_loop.vertices
-        observer = DoorObserver.new
+        # observer = DoorObserver.new
         observer.door = door
         door.face.add_observer(observer)
         door.name = 'door' + @door_creation_count.to_s
@@ -1178,8 +1268,16 @@ module UNES
           update_poi_dialog_grid
         end
 
-        @dialog.add_action_callback('getFloor') do |_action_context, value|
-          
+        @dialog.add_action_callback('setPoiVisibility') do |_action_context, value|
+          @pois.each do |p|
+            p.component.hidden = true?(value)
+          end
+        end
+
+        @dialog.add_action_callback('setCellVisibility') do |_action_context, value|
+          @cells.each do |c|
+            c.group.hidden = true?(value)
+          end
         end
 
         @dialog.add_action_callback('setNodeVisibility') do |_action_context, value|
@@ -1338,36 +1436,42 @@ module UNES
           next unless c.id == id
 
           # c.layer = layer
-          c.cell_type = cell_type if cell_type != -1
+          update_cell_type(cell_type, c)
 
-          if cell_type == CellType::DOOR
-            #door일 경우 색상 변경
-            c.group.material = @door_material
-            c.group.entities.each do |e|
-              next unless e.is_a?(Face)
-              e.material = @door_material
-            end
-          elsif cell_type == CellType::STAIR
-            c.group.material = @stair_material
-            c.group.entities.each do |e|
-              next unless e.is_a?(Face)
-              e.material = @stair_material
-            end
-          else
-            #아닐 경우 색상 cell로 복원
-            c.group.material = @cell_material
-            c.group.entities.each do |e|
-              next unless e.is_a?(Face)
-              e.material = @cell_material
-            end
-          end
-          
           c.name = name
           c.group.visible = visible
           break
         end
 
         update_all_nodes if cell_type == CellType::DOOR || cell_type == CellType::STAIR
+      end
+
+      def update_cell_type(cell_type, c)
+        c.cell_type = cell_type if cell_type != -1
+
+        if cell_type == CellType::DOOR
+          #door일 경우 색상 변경
+          c.group.material = @door_material
+          c.group.entities.each do |e|
+            next unless e.is_a?(Face)
+            e.material = @door_material
+          end
+        elsif cell_type == CellType::STAIR
+          c.group.material = @stair_material
+          c.group.entities.each do |e|
+            next unless e.is_a?(Face)
+
+            e.material = @stair_material
+          end
+        else
+          #아닐 경우 색상 cell로 복원
+          c.group.material = @cell_material
+          c.group.entities.each do |e|
+            next unless e.is_a?(Face)
+
+            e.material = @cell_material
+          end
+        end
       end
 
       def create_floor_layer(floorHash)
@@ -1647,6 +1751,7 @@ module UNES
             @dialog.execute_script("updateFloor(#{json})")
           end
         end
+        
       end
       #update_dialog end
 
@@ -1701,8 +1806,9 @@ module UNES
         else
           json = ''
           @dialog.execute_script("updateNodeDialogProperty(#{json})")
+          update_node_dialog_grid
         end
-      end      
+      end
 
       def update_node_dialog_grid
         node_hash = []
@@ -1854,28 +1960,26 @@ module UNES
         dialog.show
       end
 
-      def export_indoorgml
-        base = UI.savepanel('Save IndoorGml File', '~', 'IndoorGml Files|*.gml;||')
-        basename = File.dirname(base) + '/' + File.basename(base, '.*')
-
+      def export_indoorgml_ver_1
+        base = UI.savepanel('Save IndoorGml File', '~', 'IndoorGml Files|*.gml;||')        
         puts base
+        data = ''
 
-        $data = ''
+        data.concat("version\n")
+        data.concat("$$$$\n")
+        data.concat("1.0\n")
+        data.concat("####\n")
 
-        $data.concat("version\n")
-        $data.concat("$$$$\n")
-        $data.concat("1.0\n")
-        $data.concat("####\n")
-
+        # cell 정보 export
         @cells.each do |c|
-          $data.concat("cell\n")
-          $data.concat("$$$$\n")
-          $data.concat("#{c.id}\n")
-          $data.concat("$$$$\n")
-          $data.concat("#{c.name}\n")
-          $data.concat("$$$$\n")          
-          $data.concat("#{c.get_cell_type_name}\n")
-          $data.concat("$$$$\n")
+          data.concat("cell\n")
+          data.concat("$$$$\n")
+          data.concat("#{c.id}\n")
+          data.concat("$$$$\n")
+          data.concat("#{c.name}\n")
+          data.concat("$$$$\n")          
+          data.concat("#{c.get_cell_type_name}\n")
+          data.concat("$$$$\n")
           # vertices
           c.group.entities.each do |e|
             next unless e.is_a?(Face)
@@ -1883,39 +1987,102 @@ module UNES
             e.outer_loop.vertices.each do |v|
               p = v.position.transform(c.group.transformation)
               # p = v.position
-              $data.concat("#{p.x.to_f},#{p.z.to_f},#{p.y.to_f},")
+              data.concat("#{p.x.to_f},#{p.z.to_f},#{p.y.to_f},")
             end
 
             p = e.outer_loop.vertices[0].position.transform(c.group.transformation)
 
-            $data.concat("#{p.x.to_f},#{p.z.to_f},#{p.y.to_f}")
-
-            $data.concat('*')
+            data.concat("#{p.x.to_f},#{p.z.to_f},#{p.y.to_f}")
+            data.concat('*')
           end
 
-          $data.concat("\n$$$$\n")
-          $data.concat("#{c.node.id}\n")
-          $data.concat("$$$$\n")
-          $data.concat("#{c.node.name}\n")
-          $data.concat("$$$$\n")
+          data.concat("\n$$$$\n")
+          data.concat("#{c.node.id}\n")
+          data.concat("$$$$\n")
+          data.concat("#{c.node.name}\n")
+          data.concat("$$$$\n")
           p = c.node.component.bounds.center.transform(c.group.transformation)
-          $data.concat("#{p.x.to_f},#{p.z.to_f},#{p.y.to_f}\n")
+          data.concat("#{p.x.to_f},#{p.z.to_f},#{p.y.to_f}\n")
 
-          $data.concat("$$$$\n")
+          data.concat("$$$$\n")
           @cells.each do |c1|
-            $data.concat("#{c1.node.name},") if is_link_exist(c.node, c1.node)
+            data.concat("#{c1.node.name},") if is_link_exist(c.node, c1.node)
           end
 
-          $data.concat("\n####\n")
+          data.concat("\n####\n")
+        end        
+
+        puts data
+
+        File.write('C:\\Users\\Public\\Documents\\temp_indoorgml.txt', data)
+
+        path = File.expand_path('../Plugins/IndoorGmlConverter/', __dir__)
+        path.concat('/IndoorGmlConverter.exe')
+        system(path, base)
+      end
+
+      def export_indoorgml
+        base = UI.savepanel('Save IndoorGml File', '~', 'IndoorGml Files|*.gml;||')
+        # basename = File.dirname(base) + '/' + File.basename(base, '.*')
+
+        puts base
+
+        data = ''
+
+        data.concat("version\n")
+        data.concat("$$$$\n")
+        data.concat("1.0\n")
+        data.concat("####\n")
+
+        @cells.each do |c|
+          data.concat("cell\n")
+          data.concat("$$$$\n")
+          data.concat("#{c.id}\n")
+          data.concat("$$$$\n")
+          data.concat("#{c.name}\n")
+          data.concat("$$$$\n")          
+          data.concat("#{c.get_cell_type_name}\n")
+          data.concat("$$$$\n")
+          # vertices
+          c.group.entities.each do |e|
+            next unless e.is_a?(Face)
+
+            e.outer_loop.vertices.each do |v|
+              p = v.position.transform(c.group.transformation)
+              # p = v.position
+              data.concat("#{p.x.to_f},#{p.z.to_f},#{p.y.to_f},")
+            end
+
+            p = e.outer_loop.vertices[0].position.transform(c.group.transformation)
+
+            data.concat("#{p.x.to_f},#{p.z.to_f},#{p.y.to_f}")
+
+            data.concat('*')
+          end
+
+          data.concat("\n$$$$\n")
+          data.concat("#{c.node.id}\n")
+          data.concat("$$$$\n")
+          data.concat("#{c.node.name}\n")
+          data.concat("$$$$\n")
+          p = c.node.component.bounds.center.transform(c.group.transformation)
+          data.concat("#{p.x.to_f},#{p.z.to_f},#{p.y.to_f}\n")
+
+          data.concat("$$$$\n")
+          @cells.each do |c1|
+            data.concat("#{c1.node.name},") if is_link_exist(c.node, c1.node)
+          end
+
+          data.concat("\n####\n")
         end
 
         door_counter = 0;
 
         @doors.each do |d|
-          $data.concat("door\n")
-          $data.concat("$$$$\n")
-          $data.concat("door_base_#{door_counter}\n")
-          $data.concat("$$$$\n")
+          data.concat("door\n")
+          data.concat("$$$$\n")
+          data.concat("door_base_#{door_counter}\n")
+          data.concat("$$$$\n")
           # vertices
           # if d.face.nil?
           #   d.group.entities.each do |e|
@@ -1923,9 +2090,9 @@ module UNES
   
           #     e.outer_loop.vertices.each do |v|
           #       p = v.position
-          #       $data.concat("#{p.x.to_f},#{p.y.to_f},#{p.z.to_f},")
+          #       data.concat("#{p.x.to_f},#{p.y.to_f},#{p.z.to_f},")
           #     end
-          #     $data.concat('*')
+          #     data.concat('*')
           #   end
           # elsif d.group.nil?
           #   if d.face.deleted?
@@ -1934,27 +2101,27 @@ module UNES
 
           #   d.face.outer_loop.vertices.each do |v|
           #     p = v.position
-          #     $data.concat("#{p.x.to_f},#{p.y.to_f},#{p.z.to_f},")
+          #     data.concat("#{p.x.to_f},#{p.y.to_f},#{p.z.to_f},")
           #   end
           #   # face의 끝
-          #   $data.concat('*')
+          #   data.concat('*')
           # end          
-          #$data.concat("$$$$\n")
-          $data.concat("#{d.node.name}\n")
-          $data.concat("$$$$\n")
+          #data.concat("$$$$\n")
+          data.concat("#{d.node.name}\n")
+          data.concat("$$$$\n")
           p = d.node.component.bounds.center
-          $data.concat("#{p.x.to_f},#{p.z.to_f},#{p.y.to_f} ")
+          data.concat("#{p.x.to_f},#{p.z.to_f},#{p.y.to_f} ")
 
           # @cells.each do |c1|
-          #   $data.concat(c1.name.to_s) if is_link_exist(c, c1)
+          #   data.concat(c1.name.to_s) if is_link_exist(c, c1)
           # end
 
-          $data.concat("####\n")
+          data.concat("####\n")
         end
 
-        puts $data
+        puts data
 
-        File.write('C:\\Users\\Public\\Documents\\temp_indoorgml.txt', $data)
+        File.write('C:\\Users\\Public\\Documents\\temp_indoorgml.txt', data)
 
         path = File.expand_path('../Plugins/IndoorGmlConverter/', __dir__)
         path.concat('/IndoorGmlConverter.exe')
@@ -1963,12 +2130,15 @@ module UNES
 
       # MAIN PROCEDURE ------------------------------------------------------------------------
       def indoorgml_import
+        return if UI.messagebox('Import IndoorGml file?', MB_YESNO) == IDNO
+
+        Sketchup.file_new
         indoorgml_import_init
         @@model.start_operation('Import IndoorGml File', true)
         indoorgml_import_get_input
         t1 = Time.now
         puts 'Start Time: ' + @@timestamp.to_s
-        import_indoor_gml_geometry
+        import_indoor_gml_geometry_ver1
         puts 'Created:    ' + @@poly_count.to_s
         @@model.commit_operation
         puts 'End Time:   ' + Time.now.to_s
@@ -2008,42 +2178,81 @@ module UNES
         @@display_bb = input[2]
       end
 
-      # IMPORT INDOORGML ----------------------------------------------------------------------
-      def import_indoor_gml_geometry
+      # IMPORT INDOORGML version 1 ------------------------------------------------------------
+      def import_indoor_gml_geometry_ver1
         #        @@model.start_operation("Import IndoorGml File",true)
-        @@xmldoc.elements.each('.//CellSpace') do |csg|
-          id = csg.attributes['gml:id']
-          group = @@model.entities.add_group
-          group.name = id
-          csg.elements.each('.//gml:LinearRing') do |csm|
-            pts = []
-            csm.elements.each('.//gml:pos') do |ps|
-              values = ps.text.split(' ')
-              if values.length == 3
-                pts.push(Geom::Point3d.new(values[0].to_f * @@scale, values[1].to_f * @@scale, values[2].to_f * @@scale))
-              end
-            end
+        if @@xmldoc.elements['.//CellSpace'].nil? && !@@xmldoc.elements['.//core:CellSpace'].nil?
+            @@xmldoc.elements.each('.//core:CellSpace') do |csg|
+            process_cell_space_ver1 csg
+          end
+        else
+          @@xmldoc.elements.each('.//CellSpace') do |csg|
+            process_cell_space_ver1 csg
+          end
+        end
+      end
 
-            begin
-              face = group.entities.add_face(pts)
-              @@poly_count += 1
-            rescue StandardError => e
-            else
-            ensure
+      def process_cell_space_ver1 csg
+        id = csg.attributes['gml:id']
+        name = csg.attributes['gml:name']
+        type_name = csg.attributes['gml:type']
+
+        group = @@model.entities.add_group
+        group.name = "cell_group"
+        group.name = id unless id.nil?
+
+        csg.elements.each('.//gml:LinearRing') do |csm|
+          pts = []
+          csm.elements.each('.//gml:pos') do |ps|
+            values = ps.text.split(' ')
+            if values.length == 3
+              pts.push(Geom::Point3d.new(values[0].to_f * @@scale, values[1].to_f * @@scale, values[2].to_f * @@scale))
             end
           end
 
-          next if group.nil?
-
-          group.material = Color.new('red')
-          group.material.alpha = 0.3
-          
-          if group.name.include? "Door_Base"
-            create_door(group)
-          elsif group.name.include? "door_"
-            create_door(group)
+          begin
+            group.entities.add_face(pts)
+            @@poly_count += 1
+          rescue StandardError => e
+            puts e
           else
-            create_cell(group)
+          ensure
+          end
+        end
+
+        return if group.nil?
+
+        group.material = Color.new('red')
+        group.material.alpha = 0.3
+
+        if group.name.include? "Door_Base"
+          create_door(group)
+        elsif group.name.include? "door_"
+          create_door(group)
+        else
+          cell = create_cell(group)
+
+          return if cell.nil?
+
+          cell.name = name unless name.nil?
+          cell_type = Cell.get_cell_type_by_name(type_name)
+          cell_type = cell_type == -1 ? CellType::SPACE : cell_type
+
+          update_cell_type(cell_type, cell) unless cell_type == CellType::SPACE          
+          update_all_nodes if cell_type == CellType::DOOR || cell_type == CellType::STAIR
+        end
+      end
+
+      # IMPORT INDOORGML ----------------------------------------------------------------------
+      def import_indoor_gml_geometry
+        #        @@model.start_operation("Import IndoorGml File",true)
+        if @@xmldoc.elements[".//CellSpace"].nil?
+          @@xmldoc.elements.each('.//core:CellSpace') do |csg|
+            process_cell_space csg
+          end
+        else
+          @@xmldoc.elements.each('.//CellSpace') do |csg|
+            process_cell_space csg
           end
         end
 
@@ -2066,6 +2275,42 @@ module UNES
         # GET SHAPEFILE DATA --------------------------------------------------------------------
 
         #        @@model.commit_operation
+      end
+
+      def process_cell_space csg
+        id = csg.attributes['gml:id']
+        group = @@model.entities.add_group
+        group.name = id
+        csg.elements.each('.//gml:LinearRing') do |csm|
+          pts = []
+          csm.elements.each('.//gml:pos') do |ps|
+            values = ps.text.split(' ')
+            if values.length == 3
+              pts.push(Geom::Point3d.new(values[0].to_f * @@scale, values[1].to_f * @@scale, values[2].to_f * @@scale))
+            end
+          end
+
+          begin
+            face = group.entities.add_face(pts)
+            @@poly_count += 1
+          rescue StandardError => e
+          else
+          ensure
+          end
+        end
+
+        return if group.nil?
+
+        group.material = Color.new('red')
+        group.material.alpha = 0.3
+
+        if group.name.include? "Door_Base"
+          create_door(group)
+        elsif group.name.include? "door_"
+          create_door(group)
+        else
+          create_cell(group)
+        end
       end
 
       def indoorgml_import_get_data

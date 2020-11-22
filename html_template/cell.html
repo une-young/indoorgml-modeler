@@ -64,7 +64,7 @@
 				<div class="line_form">
 					<span class="c_left">Cell hiding</span>
 					<span class="c_right mid">
-						<input type="checkbox" id="1" name="" class="onoff">
+						<input type="checkbox" id="1" name="" class="onoff" onclick="onClickCheckBoxCellVisibility(this);">
 						<label for="1"><span class="hide">선택</span></label>
 					</span>
 				</div>
@@ -355,6 +355,10 @@
 
 			sketchup.updateCell(currentCellGridData);
 		}
+	}
+
+	function onClickCheckBoxCellVisibility(checkbox) {
+		sketchup.setCellVisibility(checkbox.checked.toString());
 	}
 
 	function updateSketchupCell(cellGridData) {

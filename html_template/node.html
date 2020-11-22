@@ -55,7 +55,7 @@
 				<div class="line_form">
 					<span class="c_left">Node hiding</span>
 					<span class="c_right mid">
-						<input type="checkbox" id="2" name="" class="onoff">
+						<input type="checkbox" id="2" name="" class="onoff" onclick="onClickCheckBoxNodeVisibility(this);">
 						<label for="2" class="onoff"><span class="hide">선택</span></label>
 					</span>
 				</div>
@@ -63,7 +63,7 @@
 				<div class="line_form">
 					<span class="c_left">Link hiding</span>
 					<span class="c_right mid">
-						<input type="checkbox" id="3" name="" class="onoff">
+						<input type="checkbox" id="3" name="" class="onoff" onclick="onClickCheckBoxLinkVisibility(this);">
 						<label for="3" class="onoff"><span class="hide">선택</span></label>
 					</span>
 				</div>
@@ -231,6 +231,11 @@
 		<!--//컨텐츠3-->
 </body>
 <script>
+	$(document).ready(function(){
+		//cell grid를 업데이트 한다.
+		sketchup.ready();
+	});
+	
 	function setLinkDivVisibility(visibility) {
 		if (visibility) {
 			document.getElementById("link_div").style.display = "block";
@@ -393,45 +398,55 @@
 	}
 
 	function updateNodeDialogProperty(node) {
-		// if ('' == node) {
-		// 	return;
-		// }			
-
-		currentNodeGridData = node;
+		if (undefined == node || '' == node) {
+			currentNodeGridData = null;			
+		 }
+		 else {
+			currentNodeGridData = node;		
+		 }
+		 
 
 		var nodeName = document.getElementById("input_node_name");
 
 		if (undefined != nodeName) {
-			nodeName.value = node.name === undefined ? '' : node.name;
+			nodeName.value = node === undefined ? '' : node.name;
 		}
 
 		var nodeType = document.getElementById("input_node_type");
 
 		if(undefined != nodeType) {
-			nodeType.value = node.type === undefined ? '' : node.type;
+			nodeType.value = node === undefined ? '' : node.type;
 		}
 
 		var x = document.getElementById("input_node_xcoordinate");
 
 		if (x != undefined) {
-			x.value = node.x === undefined ? '' : node.x;
+			x.value = node === undefined ? '' : node.x;
 		}
 
 		var y = document.getElementById("input_node_ycoordinate");
 
 		if (y != undefined) {
-			y.value = node.y === undefined ? '' : node.y;
+			y.value = node === undefined ? '' : node.y;
 		}
 
 		var lat = document.getElementById("input_node_latitude");
-		lat.value = node.lat === undefined ? '' : node.lat;
+		lat.value = node === undefined ? '' : node.lat;
 
 		var lon = document.getElementById("input_node_longitude");
-		lon.value = node.lon === undefined ? '' : node.lon;
+		lon.value = node === undefined ? '' : node.lon;
 
 		var rotation = document.getElementById("input_node_rotation");
-		rotation.value = node.rotation === undefined ? '' : node.rotation;
+		rotation.value = node === undefined ? '' : node.rotation;
 	}	
+
+	function onClickCheckBoxNodeVisibility(checkbox) {            
+		sketchup.setNodeVisibility(checkbox.checked.toString());
+	}
+
+	function onClickCheckBoxLinkVisibility(checkbox) {
+		sketchup.setLinkVisibility(checkbox.checked.toString());
+	}
 
 	var linkGridData = [];
 
