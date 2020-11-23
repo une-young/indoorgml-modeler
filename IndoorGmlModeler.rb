@@ -2,7 +2,6 @@
 
 require 'sketchup.rb'
 require 'json'
-require 'mainTool.rb'
 require 'rexml/document'
 
 # IndoorGml modeler
