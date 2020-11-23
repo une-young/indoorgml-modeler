@@ -333,8 +333,8 @@ module UNES
 
         point2 = point2.transform(node2.parent.group.transformation) if @node2.parent.is_a?(Cell)
 
-        entities = Sketchup.active_model.active_entities
-        entities.erase_entities @line
+        entities = Sketchup.active_model.active_entities        
+        entities.erase_entities @line unless @line.nil?
         @line = entities.add_cline(point1, point2)
       end
     end
@@ -499,6 +499,17 @@ module UNES
 
       def deleteNode(entity_id, node)
         puts node
+        # delete link
+        links = MAIN.get_links_by_node(node)
+
+        links.each do |l|
+          MAIN.links.delete(l)
+
+          entities = Sketchup.active_model.active_entities          
+          entities.erase_entities l.line unless l.line.deleted?
+          l.line = nil
+        end
+
         MAIN.nodes.delete(node) unless node.nil?
         puts "node count:#{MAIN.nodes.length}"
         MAIN.deleted_nodes[entity_id] = node
@@ -521,22 +532,26 @@ module UNES
           l.update_line if l.node2 == cell.node
         end
       end
+    end
 
-      # 이미 entity가 삭제가 된 상태이기 때문에 참조를 하면 안된다
-      # def onEraseEntity(entity)      
-      #   # return unless entity.is_a?(Group)
+    class NodeObserver <  Sketchup::EntityObserver
+      MAIN = UNES::IndoorGmlModeler
 
-      #   # cell = MAIN.find_cell_by_group_id entity.entityID
+      def onChangeEntity(entity)
+        return if entity.deleted?
 
-      #   # MAIN.cells.delete(cell) unless cell.nil?
-      #   # MAIN.nodes.delete(cell.node) unless cell.node.nil?
+        return unless entity.is_a?(ComponentInstance)
 
-      #   # puts "cell count:#{MAIN.cells.length}"
-      #   # puts "node count:#{MAIN.nodes.length}"
+        node = MAIN.finde_node_by_component_id(entity.entityID)
 
-      #   # deleted_cells[entity.entityID] = cell
-      #   # deleted_nodes[cell.node.component.endityID] = node
-      # end
+        return if node.nil?
+
+        MAIN.links.each do |l|
+          l.update_line if l.node1 == node
+
+          l.update_line if l.node2 == node
+        end
+      end
     end
 
     class SelectionChangeObserver < Sketchup::SelectionObserver
@@ -598,6 +613,7 @@ module UNES
       attr_writer :links
       attr_accessor :deleted_cells
       attr_accessor :deleted_nodes
+      attr_accessor :deleted_links
 
       attr_reader :edit_mode
       attr_writer :edit_mode
@@ -635,6 +651,7 @@ module UNES
         # key는 entityID
         @deleted_cells = {}
         @deleted_nodes = {}
+        @deleted_links = {}
 
         floor = Floor.new(3.5 / 1.to_m, 0) # 1층
         floor.name = @name = "Floor#{@floor_creation_count}"
@@ -694,8 +711,20 @@ module UNES
         node_links = []
 
         @links.each do |l|
-          if l.node1.name == node.name || l.node2.name == node.name
-            node_links.push(l) 
+          if l.node1.id == node.id || l.node2.id == node.id
+            node_links.push(l)
+          end
+        end
+
+        node_links
+      end
+
+      def get_links_by_id(node_id1, node_id2)
+        node_links = []
+
+        @links.each do |l|
+          if (l.node1.id == node_id1 && l.node2.id == node_id2) || (l.node1.id == node_id2 && l.node2.id == node_id1)
+            node_links.push(l)
           end
         end
 
@@ -842,6 +871,15 @@ module UNES
         nil
       end
 
+      def finde_node_by_component_id(entity_id)
+        @nodes.each do |n|
+          next if n.component.deleted?
+          return n if n.component.entityID == entity_id
+        end
+
+        nil
+      end
+
       def create_node(element)
         nil if element.nil?
 
@@ -864,6 +902,7 @@ module UNES
         node.component = instance
         node.component_id = instance.entityID
         node.position = center
+        node.component.add_observer(NodeObserver.new)
 
         @node_creation_count += 1
         @nodes.push(node)
@@ -1205,7 +1244,7 @@ module UNES
           indoorgml_import
           nil
         end
-        @dialog.add_action_callback('showThisCellOnly') do |_action_context, _value|
+        @dialog.add_action_callback('showThisCellOnly') do |_action_context, _value|``
           entity = Sketchup.active_model.selection.first
 
           show_this_cell_only(entity) if entity.is_a?(Group)
@@ -1218,6 +1257,19 @@ module UNES
         end
 
         @dialog.add_action_callback('updateCellGroup') do |_action_context, value|
+        end
+
+        @dialog.add_action_callback('deleteLink') do |_action_context, value|
+          puts value
+          ids = value.split('_', -1)
+          puts ids
+          if ids.length == 2
+            links = get_links_by_id(ids[0], ids[2])
+            
+            @links.delete(links[0]) if links.length > 0
+            puts "#{link[0]} deleted"
+            update_dialog
+          end
         end
 
         # cell data를 html dialog에서 받아서 업데이트 한다.
@@ -1239,6 +1291,15 @@ module UNES
           end
         end
 
+        @dialog.add_action_callback('selectNode') do |_action_context, value1|
+          node = get_node_by_id(value1)
+
+          unless node.nil?
+            Sketchup.active_model.selection.clear
+            Sketchup.active_model.selection.add node.component
+          end
+        end
+
         @dialog.add_action_callback('selectPoi') do |_action_context, value1|
           poi = get_poi_by_id(value1)
 
@@ -1252,7 +1313,7 @@ module UNES
          @dialog.add_action_callback('updateNode') do |_action_context, value1|
           value1.each do |d|
             puts d
-          end
+         end
 
           update_node(value1)
           update_node_dialog_grid
@@ -2181,16 +2242,43 @@ module UNES
       # IMPORT INDOORGML version 1 ------------------------------------------------------------
       def import_indoor_gml_geometry_ver1
         #        @@model.start_operation("Import IndoorGml File",true)
-        if @@xmldoc.elements['.//CellSpace'].nil? && !@@xmldoc.elements['.//core:CellSpace'].nil?
-            @@xmldoc.elements.each('.//core:CellSpace') do |csg|
-            process_cell_space_ver1 csg
-          end
-        else
-          @@xmldoc.elements.each('.//CellSpace') do |csg|
+
+        csg_list1 = @@xmldoc.elements['.//CellSpace']
+        csg_list2 = @@xmldoc.elements['.//core:CellSpace']
+        csg_list3 = @@xmldoc.elements['.//core:cellSpaceMember']
+
+        unless csg_list1.nil?
+          csg_list1 do |csg|
             process_cell_space_ver1 csg
           end
         end
-      end
+
+        unless csg_list2.nil?
+          csg_list2 do |csg|
+            process_cell_space_ver1 csg
+          end
+        end
+
+        unless csg_list3.nil?
+          csg_list3 do |csg|
+            process_cell_space_ver1 csg
+          end
+        end
+
+      #   if @@xmldoc.elements['.//CellSpace'].nil? && !@@xmldoc.elements['.//core:CellSpace'].nil?
+      #     @@xmldoc.elements.each('.//core:CellSpace') do |csg|
+      #       process_cell_space_ver1 csg
+      #     end
+      #   elsif !@@xmldoc.elements['.//core:cellSpaceMember'].nil?
+      #     @@xmldoc.elements.each('.//core:cellSpaceMember') do |csg|
+      #       process_cell_space_ver1 csg
+      #     end
+      #   else
+      #     @@xmldoc.elements.each('.//CellSpace') do |csg|
+      #       process_cell_space_ver1 csg
+      #     end
+      #   end
+      # end
 
       def process_cell_space_ver1 csg
         id = csg.attributes['gml:id']
@@ -2420,6 +2508,7 @@ module UNES
           anchor = Anchor.new
           anchor.read("C:/Users/Public/Documents/anchor.txt")
           node.anchor = anchor unless node.nil?
+          update_dialog
         end
       end
 
