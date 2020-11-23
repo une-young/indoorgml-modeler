@@ -2242,43 +2242,20 @@ module UNES
       # IMPORT INDOORGML version 1 ------------------------------------------------------------
       def import_indoor_gml_geometry_ver1
         #        @@model.start_operation("Import IndoorGml File",true)
-
-        csg_list1 = @@xmldoc.elements['.//CellSpace']
-        csg_list2 = @@xmldoc.elements['.//core:CellSpace']
-        csg_list3 = @@xmldoc.elements['.//core:cellSpaceMember']
-
-        unless csg_list1.nil?
-          csg_list1 do |csg|
+        if @@xmldoc.elements['.//CellSpace'].nil? && !@@xmldoc.elements['.//core:CellSpace'].nil?
+          @@xmldoc.elements.each('.//core:CellSpace') do |csg|
+            process_cell_space_ver1 csg
+          end
+        elsif !@@xmldoc.elements['.//core:cellSpaceMember'].nil?
+          @@xmldoc.elements.each('.//core:cellSpaceMember') do |csg|
+            process_cell_space_ver1 csg
+          end
+        else
+          @@xmldoc.elements.each('.//CellSpace') do |csg|
             process_cell_space_ver1 csg
           end
         end
-
-        unless csg_list2.nil?
-          csg_list2 do |csg|
-            process_cell_space_ver1 csg
-          end
-        end
-
-        unless csg_list3.nil?
-          csg_list3 do |csg|
-            process_cell_space_ver1 csg
-          end
-        end
-
-      #   if @@xmldoc.elements['.//CellSpace'].nil? && !@@xmldoc.elements['.//core:CellSpace'].nil?
-      #     @@xmldoc.elements.each('.//core:CellSpace') do |csg|
-      #       process_cell_space_ver1 csg
-      #     end
-      #   elsif !@@xmldoc.elements['.//core:cellSpaceMember'].nil?
-      #     @@xmldoc.elements.each('.//core:cellSpaceMember') do |csg|
-      #       process_cell_space_ver1 csg
-      #     end
-      #   else
-      #     @@xmldoc.elements.each('.//CellSpace') do |csg|
-      #       process_cell_space_ver1 csg
-      #     end
-      #   end
-      # end
+      end
 
       def process_cell_space_ver1 csg
         id = csg.attributes['gml:id']
