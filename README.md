@@ -2,7 +2,7 @@
 
 download installer here 
 
-https://drive.google.com/file/d/1Np-zGIGPJmIlSmqNGluXXncjc92To2nq/view?usp=sharing
+https://drive.google.com/file/d/1vEcEhjxiSnQbNIPFG4ly8-21SRLzOKeO/view?usp=sharing
 
 If you meet error like this.
 
