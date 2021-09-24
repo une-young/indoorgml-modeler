@@ -2590,6 +2590,8 @@ module UNES
             }
           end
 
+          data = data.dup if data.frozen?
+          
           ptsList.each do |ptList|
             data.concat("@@@\n")
             ptList.each do |p|
