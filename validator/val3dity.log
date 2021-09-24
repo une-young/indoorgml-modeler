@@ -1,0 +1,115 @@
+
+######### Validating Feature #########
+id:   none
+type: GenericObject
+--
+======== Validating Primitive ========
+Solid
+id: solid_cell_0
+--
+--- Shell validation (#0) ---
+-----2D validation of each surface
+-----Triangulation of each surface
+-----Planarity of surfaces (with normals deviation)
+-----Combinatorial consistency
+	ERROR 302: SHELL_NOT_CLOSED
+	[Location hole: (-260.11, -47.9861, 0)]
+======== INVALID ========
+======== Validating Primitive ========
+Solid
+id: solid_cell_1
+--
+--- Shell validation (#0) ---
+-----2D validation of each surface
+-----Triangulation of each surface
+-----Planarity of surfaces (with normals deviation)
+-----Combinatorial consistency
+-----Geometrical consistency
+-----Global orientation of normals
+========= VALID =========
+======== Validating Primitive ========
+Solid
+id: solid_cell_2
+--
+--- Shell validation (#0) ---
+-----2D validation of each surface
+-----Triangulation of each surface
+-----Planarity of surfaces (with normals deviation)
+-----Combinatorial consistency
+-----Geometrical consistency
+-----Global orientation of normals
+========= VALID =========
+======== Validating Primitive ========
+Solid
+id: solid_cell_3
+--
+--- Shell validation (#0) ---
+-----2D validation of each surface
+-----Triangulation of each surface
+-----Planarity of surfaces (with normals deviation)
+-----Combinatorial consistency
+-----Geometrical consistency
+-----Global orientation of normals
+========= VALID =========
+======== Validating Primitive ========
+Solid
+id: solid_cell_4
+--
+--- Shell validation (#0) ---
+-----2D validation of each surface
+-----Triangulation of each surface
+-----Planarity of surfaces (with normals deviation)
+-----Combinatorial consistency
+-----Geometrical consistency
+-----Global orientation of normals
+========= VALID =========
+======== Validating Primitive ========
+Solid
+id: solid_cell_5
+--
+--- Shell validation (#0) ---
+-----2D validation of each surface
+-----Triangulation of each surface
+-----Planarity of surfaces (with normals deviation)
+-----Combinatorial consistency
+-----Geometrical consistency
+-----Global orientation of normals
+========= VALID =========
+======== Validating Primitive ========
+Solid
+id: solid_cell_6
+--
+--- Shell validation (#0) ---
+-----2D validation of each surface
+-----Triangulation of each surface
+-----Planarity of surfaces (with normals deviation)
+-----Combinatorial consistency
+-----Geometrical consistency
+-----Global orientation of normals
+	ERROR 405: WRONG_ORIENTATION_SHELL (id: i)
+======== INVALID ========
+======== Validating Primitive ========
+Solid
+id: solid_cell_7
+--
+--- Shell validation (#0) ---
+-----2D validation of each surface
+-----Triangulation of each surface
+-----Planarity of surfaces (with normals deviation)
+-----Combinatorial consistency
+	ERROR 303: NON_MANIFOLD_CASE (face 6)
+	ERROR 303: NON_MANIFOLD_CASE (face 7)
+	ERROR 303: NON_MANIFOLD_CASE (face 7)
+======== INVALID ========
+======== Validating Primitive ========
+Solid
+id: solid_cell_8
+--
+--- Shell validation (#0) ---
+-----2D validation of each surface
+-----Triangulation of each surface
+-----Planarity of surfaces (with normals deviation)
+-----Combinatorial consistency
+	ERROR 302: SHELL_NOT_CLOSED
+	[Location hole: (695.272, -245.274, 76.7716)]
+======== INVALID ========

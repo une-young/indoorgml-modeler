@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>작업</title>
+
+<link rel="stylesheet" href="css/style.css?ver=01">
+<script type="text/javascript" src="js/jquery-1.9.1.min.js" ></script>
+
+<!--스크롤바 디자인 적용(크롬,IE,파이어폭스,엣지 공용)-->
+<link rel="stylesheet" href="css/jquery.mCustomScrollbar.min.css?ver=01">
+<script type="text/javascript" src="js/jquery.mCustomScrollbar.concat.min.js"></script>
+
+<!--트리메뉴-->
+<script type="text/javascript" src="js/jquery.treeview.js" ></script>
+
+<script type="text/javascript" src="..\validator\report\report.js">    
+    alert(eport);
+</script>
+</head>
+
+<body>
+
+<!--가로 패딩30px 적용 / 100%영역-->
+<div style="width:100%; padding:30px;">
+
+<!--gml 메뉴 스크립트-->
+<script>
+$(".gml a").click(function(){
+	$(".gml a").removeClass("active");
+	$(this).addClass("active");
+});
+</script>
+<!--//상단아이콘-->
+
+<!--컨텐츠4-->
+<div class="box_wrap">
+	<!--타이틀-->
+	<div class="con_title">
+		<h3 class="title_b">Validation result</h3>
+		<!--최소화 주석처리-->
+		<!--<a href="#" class="bt_sizedown_b"><span class="blind">최소화</span></a>-->
+		<a href="#" class="bt_sizeup_b"><span class="blind">최대화</span></a>
+		<a href="#" class="bt_close_b"><span class="blind">닫기</span></a>
+	</div>
+	<!--//타이틀-->
+
+	<!--내용-->
+	<div class="con_area">
+	<!--<div class="space10"></div>-->
+
+	<h4 class="inner_title">Validation</h4>
+
+	<div class="line_form">
+		<span class="c_left">Show invalid features only</span>
+		<span class="c_right mid">
+			<input type="checkbox" id="4" name="" checked=false class="onoff" onclick="onClickCheckBoxInvalidFeaturesVisibility(this);">
+			<label for="4"class="onoff"><span class="hide">선택</span></label>
+		</span>
+	</div>
+
+	<div class="line_form">
+		<span class="c_left">Valid features</span>
+		<span class="c_right">			
+			<input type="text" name="" id="input_valid_features" class="base w100" placeholder="" value=""/>
+		</span>
+	</div>
+
+    <div class="line_form">
+		<span class="c_left">Valid primitives</span>
+		<span class="c_right">			
+			<input type="text" name="" id="input_valid_primitives" class="base w100" placeholder="" value=""/>
+		</span>
+	</div>	
+
+	<div class="line_form">
+		<span class="c_left">Invalid features</span>
+		<span class="c_right">			
+			<input type="text" name="" id="input_invalid_features" class="base w100" placeholder="" value=""/>
+		</span>
+	</div>
+
+	<div class="line_form">
+		<span class="c_left">Invalid primitives</span>
+		<span class="c_right">			
+			<input type="text" name="" id="input_invalid_primitives" class="base w100" placeholder="" value=""/>
+		</span>
+	</div>
+
+	<div class="line_form">
+		<span class="c_all">Validation list</span>
+
+		<!--항목-->
+		<ul class="account4_head">			
+			<li>Error Code</li>			
+			<li>Feature ID</li>			
+			<li>Description</li>			
+			<li></li>			
+		</ul>
+		<!--//항목-->
+							
+		<!--리스트-->
+		<div class="mCustomScrollbar tbl_area">
+		<table class="type01" id="grid_table">
+			<caption>이표는 상세목록입니다</caption>
+			<colgroup>
+				<!--<col style="width:15%"/>
+				<col style="width:25%"/>				
+				<col style="width:80%"/>
+				<col style="width:5%"/>-->
+				<col width="10%"/>
+				<col width="30%"/>				
+				<col width="55%"/>				
+			</colgroup>
+			<tbody id="poi_grid_table_body">			
+			</tbody>
+		</table>
+		</div>
+		<!--//리스트-->  
+	</div>
+
+	<!--하단 버튼-->
+	<ul class="btn_group">
+		<li><a href="#" class="ok" onclick="reload_page();"><img src="images/ic_ok.png" class="lk">Validate</a></li>						
+	</ul>
+	<!--//하단 버튼-->
+
+	</div>
+	<!--//내용-->
+
+</div>
+<!--//컨텐츠4-->
+
+
+</div>
+<!--//컨텐츠6-->
+
+
+
+</div>
+<!--//가로 패딩30px 적용 / 100%영역-->
+
+
+
+</body>
+<script>	
+	$(document).ready(function(){
+		//cell grid를 업데이트 한다.
+		sketchup.ready();
+	});
+
+	function UpdateGrid() {
+		var data = "";
+
+		for (var i = 0; i < gridData.length; i++) {
+
+			data += "<tr onclick='solid_cell_clicked(this)' id="+ gridData[i]["id"] + 
+            "><td class='al_center'>"+ gridData[i]["error_code"] +"</td>" +								
+			"<td class='al_center' >"+ gridData[i]["id"] +"</td>" +
+                "<td class='al_center'>"+ gridData[i]["error_desc"] +"</td></tr>";				
+		}
+
+		document.getElementById("poi_grid_table_body").innerHTML = data;
+	}	
+
+    function solid_cell_clicked(obj)
+    {
+        var cell_id = get_cell_id(obj.id);
+        
+        if(null != cell_id) {
+            sketchup.gotoEntity(cell_id);
+        }        
+    }
+
+    function get_cell_id(feature_id) {
+        var elements = feature_id.split('_');
+
+        if(3 == elements.length) {
+            var cell_id = elements[1] + '_' + elements[2];
+            
+            return cell_id;
+        }        
+
+        return null;
+    }	
+
+	var gridData = [];
+	var currentPoiGridData = null;
+    loadfile();	
+    
+    function loadfile() {
+        gridData = [];
+
+        var counter = 0;
+
+		document.getElementById("input_valid_features").value = report['valid_features'];
+		document.getElementById("input_invalid_features").value = report['invalid_features'];
+		document.getElementById("input_valid_primitives").value = report['valid_primitives'];
+		document.getElementById("input_invalid_primitives").value = report['invalid_primitives'];
+
+
+        for(var i=0;i<report['features'].length;i++) {
+            for(var j=0;j<report['features'][i]['primitives'].length;j++) {
+                var primitive = report['features'][i]['primitives'][j];
+                var solid_id = primitive.id;
+
+                if(null != primitive.errors) {
+                    for(var k=0;k<primitive.errors.length;k++) {
+                        var error = primitive.errors[k];                    
+                        var error_code = error.code;
+                        var error_desc = error.description.replace(/_/g," ");
+						var error_info = error.info;
+                        
+                        var d = (gridData[counter] = {});                    
+                        d["id"] = solid_id;
+                        d["error_code"]=error_code;
+                        d["error_desc"]=error_desc;
+						d["error_info"]=error_info;
+                        counter++;
+                    }
+                }                
+            }
+        }
+
+        UpdateGrid();
+    }
+
+	function updatePoiDialogProperty(poi) {
+		if (undefined == poi || '' == poi) {
+			currentPoiGridData = null;			
+		 }
+		 else {
+			currentPoiGridData = poi;		
+		 }		
+
+		var poiName = document.getElementById("input_poi_name");
+
+		if (undefined != poiName) {
+			poiName.value = poi === undefined ? '' : poi.name;
+		}			
+
+		var x = document.getElementById("input_poi_xcoordinate");
+
+		if (x != undefined) {
+			x.value = poi === undefined ? '' : poi.x;;
+		}
+
+		var y = document.getElementById("input_poi_ycoordinate");
+
+		if (y != undefined) {
+			y.value = poi === undefined ? '' : poi.y;;
+		}
+	}
+
+	function onClickCheckBoxInvalidFeaturesVisibility(checkbox) {
+        if(gridData != null && gridData.length > 0) {
+            var cell_list = [];
+            for(var i=0;i<gridData.length;i++) {
+                var cell_id = get_cell_id(gridData[i]["id"]);
+
+                if(null != cell_id)
+                    cell_list[i] = cell_id;
+            }
+            sketchup.setInvalidFeaturesVisibility(cell_list, checkbox.checked.toString());
+        }		    
+	}
+
+    function reload_page() {
+        // 결과창을 표시하지 않는다.
+        sketchup.validate(false);
+        window.location.reload(); 
+    }
+
+
+	
+</script>
+</html>

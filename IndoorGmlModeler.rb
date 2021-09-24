@@ -7,12 +7,17 @@ require 'rexml/document'
 # IndoorGml modeler
 # copyright 2020 UNE.co.kr
 
-include Sketchup
-include REXML
-include Geom
+# include Sketchup
+
 
 module UNES
+  include Sketchup
+  include REXML
+  include Geom
+
   module IndoorGmlModeler
+    
+    
     module EditMode
       NONE = 0
       CELL = 1
@@ -20,6 +25,7 @@ module UNES
       POI = 3
       DOOR = 4
       FLOOR = 5
+      VALIDATION = 6
     end
 
     class Element
@@ -277,7 +283,7 @@ module UNES
       def has_entity(entity)
         false if entity.nil?
 
-        if @group.is_a?(Group)
+        if @group.is_a?(Sketchup::Group)
           true unless @group.entities.find_index(entity).nil?
         end
 
@@ -369,7 +375,7 @@ module UNES
           i = 0
           while i < model.entities.length() do
             e = model.entities[i]
-            if e.is_a?(Face) && !e.deleted?
+            if e.is_a?(Sketchup::Face) && !e.deleted?
               result = e.bounds.intersect(node.component.bounds)
 
               unless result.empty?
@@ -416,7 +422,7 @@ module UNES
       # end
     end
 
-    class IndoorGmlEntitiesObserver < EntitiesObserver
+    class IndoorGmlEntitiesObserver < Sketchup::EntitiesObserver
       MAIN = UNES::IndoorGmlModeler
 
       def onElementAdded(entities, entity)
@@ -521,7 +527,7 @@ module UNES
       def onChangeEntity(entity)
         return if entity.deleted?
 
-        return unless entity.is_a?(Group)
+        return unless entity.is_a?(Sketchup::Group)
 
         cell = MAIN.find_cell_by_group_id entity.entityID
 
@@ -539,7 +545,7 @@ module UNES
       def onChangeEntity(entity)
         return if entity.deleted?
 
-        return unless entity.is_a?(ComponentInstance)
+        return unless entity.is_a?(Sketchup::ComponentInstance)
 
         node = MAIN.finde_node_by_component_id(entity.entityID)
 
@@ -661,16 +667,16 @@ module UNES
       def update_materials
         materials = Sketchup.active_model.materials
         @cell_material = materials.add('indoor_cell')
-        @cell_material.color = Color.new('red')
+        @cell_material.color = Sketchup::Color.new('red')
         @cell_material.alpha = 0.3
         @stair_material = materials.add('indoor_stair')
-        @stair_material.color = Color.new('yellow')
+        @stair_material.color = Sketchup::Color.new('yellow')
         @stair_material.alpha = 0.3
         @door_material = materials.add('indoor_door')
-        @door_material.color = Color.new('green')
+        @door_material.color = Sketchup::Color.new('green')
         @door_material.alpha = 0.8
         @node_material = materials.add('indoor_link')
-        @node_material.color = Color.new('blue')
+        @node_material.color = Sketchup::Color.new('blue')
       end
 
       def create_link(node1, node2)
@@ -742,7 +748,7 @@ module UNES
       # TODO: You shoude shorten this function.
       def create_cell(entity)
         cell = nil
-        if entity.is_a?(Face)
+        if entity.is_a?(Sketchup::Face)
           unless is_cell_exist(entity)
             cell = Cell.new
             all_connected = entity.all_connected
@@ -756,13 +762,13 @@ module UNES
 
             cell.group = group
           end
-        elsif entity.is_a?(Group)
+        elsif entity.is_a?(Sketchup::Group)
           cell = get_cell(entity)
           if cell.nil?
             cell = Cell.new
             cell.group = entity
           end
-        elsif entity.is_a?(ComponentInstance)
+        elsif entity.is_a?(Sketchup::ComponentInstance)
           cell = get_cell(entity)
           if cell.nil?
             cell = Cell.new
@@ -774,7 +780,7 @@ module UNES
           cell.name = 'cell_' + @cell_creation_count.to_s
           node = create_node(cell)
 
-          group_name = cell.group.name
+          #group_name = cell.group.name
 
           # node를 cell 그룹에 추가
           # add node to cell group
@@ -785,11 +791,13 @@ module UNES
           cell.group_id = group.entityID
           cell.node = node
           # cell.group.name = "#{cell.name}@@@#{cell.id}"
-          cell.group.name = group_name
+          #cell.group.name = group_name
           cell.group.material = @cell_material
 
+          cell.group.name = cell.name if cell.group.name.length.zero?
+
           a.each do |e|
-            e.material = @cell_material if e.is_a?(Face)
+            e.material = @cell_material if e.is_a?(Sketchup::Face)
           end
 
           cell.group.add_observer(CellObserver.new)
@@ -939,6 +947,16 @@ module UNES
         nil
       end
 
+      # name으로 cell을 가져온다. 중복되었으면 첫번째만
+      def get_cell_by_name(name)
+        @cells.each do |c|
+          return c if c.name == name
+        end
+
+        nil
+      end
+      
+
       # id로 poi를 가져온다.
       def get_poi_by_id(id)
         @pois.each do |p|
@@ -976,7 +994,7 @@ module UNES
 
       # group 혹은 componentInstance에서 poi를 생성한다.
       def create_poi(entity)
-        if entity.is_a?(ComponentInstance)
+        if entity.is_a?(Sketchup::ComponentInstance)
           if get_poi(entity).nil?
             poi = Poi.new
             poi.name = 'poi_' + @poi_creation_count.to_s
@@ -1032,7 +1050,7 @@ module UNES
 
       # face에서 문을 생성한다.
       def create_door(face)
-        if face.is_a?(Group)
+        if face.is_a?(Sketchup::Group)
           return create_door_from_group(face)
         end
 
@@ -1069,11 +1087,11 @@ module UNES
       end
 
       def get_door(entity)
-        if entity.is_a?(Group)
+        if entity.is_a?(Sketchup::Group)
           @doors.each do |d|
             return d if d.group == entity
           end
-        elsif entity.is_a?(Face)
+        elsif entity.is_a?(Sketchup::Face)
           @doors.each do |d|
             return d if d.face == entity
           end
@@ -1093,7 +1111,7 @@ module UNES
         result = false
 
         group.entities.each do |f|
-          next unless f.is_a?(Face)
+          next unless f.is_a?(Sketchup::Face)
 
           is_face_layon = true
 
@@ -1101,7 +1119,7 @@ module UNES
             # pt를 그룹내의 상대좌표로 바꿔야 한다.
             pt = pt.transform(group.transformation.inverse)
             result = f.classify_point(pt)
-            puts result
+            puts resul
             if result == Sketchup::Face::PointUnknown || result == Sketchup::Face::PointNotOnPlane || result == Sketchup::Face::PointOutside
               is_face_layon = false
             end
@@ -1173,6 +1191,8 @@ module UNES
           @dialog = create_dialog('node.html')
         when EditMode::POI
           @dialog = create_dialog('poi.html')
+        when EditMode::VALIDATION
+          @dialog = create_dialog('validation.html')
         else
           puts 'show dialog error'
         end
@@ -1183,9 +1203,11 @@ module UNES
           nil
         end
 
+        
+
         @dialog.add_action_callback('createCell') do |_action_context, _value|
           entity = Sketchup.active_model.selection.first
-          if entity.is_a?(Face) || entity.is_a?(Group) || entity.is_a?(ComponentInstance)
+          if entity.is_a?(Sketchup::Face) || entity.is_a?(Sketchup::Group) || entity.is_a?(Sketchup::ComponentInstance)
             cell = create_cell(entity) 
             unless cell.nil?
               Sketchup.active_model.selection.clear
@@ -1197,7 +1219,7 @@ module UNES
 
         @dialog.add_action_callback('createDoor') do |_action_context, _value|
           entity = Sketchup.active_model.selection.first
-          if entity.is_a?(Face) || entity.is_a?(Group)
+          if entity.is_a?(Sketchup::Face) || entity.is_a?(Sketchup::Group)
             puts "create door:#{entity}"
             create_door(entity)
           end
@@ -1207,7 +1229,7 @@ module UNES
         @dialog.add_action_callback('createNode') do |_action_context, _value|
           entity = Sketchup.active_model.selection.first
 
-          # if entity.is_a?(Face)
+          # if entity.is_a?(Sketchup::Face)
           #     create_node(entity)
           # end
 
@@ -1216,7 +1238,7 @@ module UNES
 
         @dialog.add_action_callback('createPoi') do |_action_context, _value|
           entity = Sketchup.active_model.selection.first
-          poi = create_poi(entity) if entity.is_a?(ComponentInstance)
+          poi = create_poi(entity) if entity.is_a?(Sketchup::ComponentInstance)
 
           unless poi.nil?
             puts 'poi created'
@@ -1236,7 +1258,7 @@ module UNES
           nil
         end
         @dialog.add_action_callback('validate') do |_action_context, _value|
-          validate_indoorgml
+          validate_indoorgml(_value)
           nil
         end        
         @dialog.add_action_callback('read') do |_action_context, _value|
@@ -1246,7 +1268,7 @@ module UNES
         @dialog.add_action_callback('showThisCellOnly') do |_action_context, _value|``
           entity = Sketchup.active_model.selection.first
 
-          show_this_cell_only(entity) if entity.is_a?(Group)
+          show_this_cell_only(entity) if entity.is_a?(Sketchup::Group)
         end
         @dialog.add_action_callback('createFloorLayer') do |_action_context, value|
           puts value
@@ -1334,6 +1356,31 @@ module UNES
           end
         end
 
+        @dialog.add_action_callback('setInvalidFeaturesVisibility') do |_action_context, value1, value2|
+          puts value1
+
+          if !true?(value2) # hide all except invalid features
+            @cells.each do |c|
+              c.group.hidden = true
+              value1.each do |v|
+                if c.group.name == v
+                  c.group.hidden = false
+                end
+              end
+            end
+          else # show all
+            @cells.each do |c|
+              c.group.hidden = false
+            end
+          end
+        end
+
+        @dialog.add_action_callback('setFeaturesVisibility') do |_action_context, value|
+          @pois.each do |p|
+            p.component.hidden = true?(value)
+          end
+        end
+
         @dialog.add_action_callback('setCellVisibility') do |_action_context, value|
           @cells.each do |c|
             c.group.hidden = true?(value)
@@ -1349,6 +1396,31 @@ module UNES
         @dialog.add_action_callback('setLinkVisibility') do |_action_context, value|
           @links.each do |l|
             l.line.hidden = true?(value)
+          end
+        end
+
+        @dialog.add_action_callback('gotoEntity') do |_action_context, value|
+          cell = get_cell_by_name(value)
+
+          if cell.nil?
+            puts "can't find cell"
+          end
+          unless cell.nil?
+            Sketchup.active_model.selection.clear
+            Sketchup.active_model.selection.add cell.group
+
+            bounds = cell.group.bounds
+            target = bounds.center
+            max = [bounds.width, bounds.height].max
+
+            # eye = target + [500, 500, 500]
+            eye = target + [max * 0.5, max * 0.5, max * 0.5]
+            up = [0, 0, 1]
+            my_camera = Sketchup::Camera.new eye, target, up
+
+            # Get a handle to the current view and change its camera.
+            view = Sketchup.active_model.active_view
+            view.camera = my_camera
           end
         end
 
@@ -1513,13 +1585,13 @@ module UNES
           #door일 경우 색상 변경
           c.group.material = @door_material
           c.group.entities.each do |e|
-            next unless e.is_a?(Face)
+            next unless e.is_a?(Sketchup::Face)
             e.material = @door_material
           end
         elsif cell_type == CellType::STAIR
           c.group.material = @stair_material
           c.group.entities.each do |e|
-            next unless e.is_a?(Face)
+            next unless e.is_a?(Sketchup::Face)
 
             e.material = @stair_material
           end
@@ -1527,7 +1599,7 @@ module UNES
           #아닐 경우 색상 cell로 복원
           c.group.material = @cell_material
           c.group.entities.each do |e|
-            next unless e.is_a?(Face)
+            next unless e.is_a?(Sketchup::Face)
 
             e.material = @cell_material
           end
@@ -1696,12 +1768,12 @@ module UNES
         faceAndGroups = []
 
         entities.each do |e|
-          faceAndGroups.push e if e.is_a?(Face) || e.is_a?(Group) || e.is_a?(ComponentInstance)
+          faceAndGroups.push e if e.is_a?(Sketchup::Face) || e.is_a?(Sketchup::Group) || e.is_a?(Sketchup::ComponentInstance)
         end
 
         counter = 0
         faceAndGroups.each do |fg|
-          if fg.is_a?(ComponentInstance)
+          if fg.is_a?(Sketchup::ComponentInstance)
             if fg.layer.name.include?("RM")
               create_cell(fg) if !fg.deleted? && !fg.hidden?
             else
@@ -1722,7 +1794,7 @@ module UNES
 
         # face 만 array로 옮긴다. (entities를 직접 쓰면 entity가 도중에 추가 되었을 경우 에러 발생)
         entities.each do |e|
-          faces.push e if e.is_a?(Face)
+          faces.push e if e.is_a?(Sketchup::Face)
         end
 
         faces.each do |f|
@@ -1794,7 +1866,7 @@ module UNES
           when EditMode::POI
             update_poi_dialog(entity)
           # when EditMode::DOOR
-          #   if entity.is_a?(Face) || entity.is_a?(Group)
+          #   if entity.is_a?(Sketchup::Face) || entity.is_a?(Sketchup::Group)
           #     door = get_door(entity) # face가 이미 door일 경우 존재하는 door를 반환한다.
           #     puts door
           #     door_data = door_to_hash(door)
@@ -1816,7 +1888,7 @@ module UNES
       #update_dialog end
 
       def update_poi_dialog(entity)
-        if entity.is_a?(ComponentInstance)
+        if entity.is_a?(Sketchup::ComponentInstance)
 
           update_poi_dialog_grid
 
@@ -1843,7 +1915,7 @@ module UNES
       end
 
       def update_node_dialog(entity)
-        if entity.is_a?(ComponentInstance)
+        if entity.is_a?(Sketchup::ComponentInstance)
 
           node = get_node(entity)
 
@@ -1882,7 +1954,7 @@ module UNES
       end
 
       def update_cell_dialog(entity)
-        if entity.is_a?(Group)
+        if entity.is_a?(Sketchup::Group)
           cell = get_cell(entity)
 
           return if cell.nil?
@@ -1917,56 +1989,67 @@ module UNES
         @dialog.execute_script("updateCellGrid(#{json2})")
       end
 
-      def validate_indoorgml
-        $data = ''
+      def validate_indoorgml(show_result)
+        data = +''
+        data.concat("version\n")
+        data.concat("$$$$\n")
+        data.concat("1.0\n")
+        data.concat("####\n")
 
         @cells.each do |c|
-          $data.concat("cell\n")
-          $data.concat("$$$$\n")
-          $data.concat("#{c.name}\n")
-          $data.concat("$$$$\n")
+          data.concat("cell\n")
+          data.concat("$$$$\n")
+          data.concat("#{c.id}\n")
+          data.concat("$$$$\n")
+          data.concat("#{c.name}\n")
+          data.concat("$$$$\n")          
+          data.concat("#{c.get_cell_type_name}\n")
+          data.concat("$$$$\n")
           # vertices
           c.group.entities.each do |e|
-            next unless e.is_a?(Face)
+            next unless e.is_a?(Sketchup::Face)
 
             e.outer_loop.vertices.each do |v|
               p = v.position.transform(c.group.transformation)
               # p = v.position
-              $data.concat("#{p.x.to_f},#{p.z.to_f},#{p.y.to_f},")
+              data.concat("#{p.x.to_f},#{p.z.to_f},#{p.y.to_f},")
             end
 
             p = e.outer_loop.vertices[0].position.transform(c.group.transformation)
 
-            $data.concat("#{p.x.to_f},#{p.z.to_f},#{p.y.to_f}")
+            data.concat("#{p.x.to_f},#{p.z.to_f},#{p.y.to_f}")
 
-            $data.concat('*')
+            data.concat('*')
           end
 
-          $data.concat("\n$$$$\n")
-          $data.concat("#{c.node.name}\n")
-          $data.concat("$$$$\n")
+          data.concat("\n$$$$\n")
+          data.concat("#{c.node.id}\n")
+          data.concat("$$$$\n")
+          data.concat("#{c.node.name}\n")
+          data.concat("$$$$\n")
           p = c.node.component.bounds.center.transform(c.group.transformation)
-          $data.concat("#{p.x.to_f},#{p.z.to_f},#{p.y.to_f}\n")
+          data.concat("#{p.x.to_f},#{p.z.to_f},#{p.y.to_f}\n")
 
-          # @cells.each do |c1|
-          #   $data.concat(c1.node.name.to_s) if is_link_exist(c.node, c1.node)
-          # end
+          data.concat("$$$$\n")
+          @cells.each do |c1|
+            data.concat("#{c1.node.name},") if is_link_exist(c.node, c1.node)
+          end
 
-          $data.concat("####\n")
+          data.concat("\n####\n")
         end
 
         door_counter = 0;
 
         @doors.each do |d|
-          $data.concat("door\n")
-          $data.concat("$$$$\n")
-          $data.concat("door_base_#{door_counter}\n")
-          $data.concat("$$$$\n") 
-          $data.concat("#{d.node.name}\n")
-          $data.concat("$$$$\n")
+          data.concat("door\n")
+          data.concat("$$$$\n")
+          data.concat("door_base_#{door_counter}\n")
+          data.concat("$$$$\n")
+          data.concat("#{d.node.name}\n")
+          data.concat("$$$$\n")
           p = d.node.component.bounds.center
-          $data.concat("#{p.x.to_f},#{p.z.to_f},#{p.y.to_f} ")
-          $data.concat("####\n")
+          data.concat("#{p.x.to_f},#{p.z.to_f},#{p.y.to_f} ")
+          data.concat("####\n")
         end
 
         # puts $data
@@ -1974,7 +2057,7 @@ module UNES
         base = File.expand_path('../Plugins/validator/', __dir__)
         base.concat('/temp.gml')
 
-        File.write('C:\\Users\\Public\\Documents\\temp_indoorgml.txt', $data)
+        File.write('C:\\Users\\Public\\Documents\\temp_indoorgml.txt', data)
         path = File.expand_path('../Plugins/IndoorGmlConverter/', __dir__)
         path.concat('/IndoorGmlConverter.exe')
         system(path, base)
@@ -2007,23 +2090,25 @@ module UNES
           width: 1024,
           height: 768
         }
-
+=begin
         unless @dialog.nil?
           @dialog.close
           @dialog = nil
         end
-
-        dialog = UI::HtmlDialog.new(options)
-        dialog.set_size(options[:width], options[:height]) # Ensure size is set.
-        dialog.set_file(html_file)
-        dialog.center
-        dialog.show
+=end
+        if (!show_result.nil? && true?(show_result)) || show_result.nil?
+          dialog = UI::HtmlDialog.new(options)
+          dialog.set_size(options[:width], options[:height]) # Ensure size is set.
+          dialog.set_file(html_file)
+          dialog.center
+          dialog.show
+        end
       end
 
       def export_indoorgml_ver_1
         base = UI.savepanel('Save IndoorGml File', '~', 'IndoorGml Files|*.gml;||')        
         puts base
-        data = ''
+        data = + ''
 
         data.concat("version\n")
         data.concat("$$$$\n")
@@ -2042,7 +2127,7 @@ module UNES
           data.concat("$$$$\n")
           # vertices
           c.group.entities.each do |e|
-            next unless e.is_a?(Face)
+            next unless e.is_a?(Sketchup::Face)
 
             e.outer_loop.vertices.each do |v|
               p = v.position.transform(c.group.transformation)
@@ -2087,7 +2172,7 @@ module UNES
 
         puts base
 
-        data = ''
+        data = +''
 
         data.concat("version\n")
         data.concat("$$$$\n")
@@ -2105,7 +2190,7 @@ module UNES
           data.concat("$$$$\n")
           # vertices
           c.group.entities.each do |e|
-            next unless e.is_a?(Face)
+            next unless e.is_a?(Sketchup::Face)
 
             e.outer_loop.vertices.each do |v|
               p = v.position.transform(c.group.transformation)
@@ -2146,7 +2231,7 @@ module UNES
           # vertices
           # if d.face.nil?
           #   d.group.entities.each do |e|
-          #     next unless e.is_a?(Face)
+          #     next unless e.is_a?(Sketchup::Face)
   
           #     e.outer_loop.vertices.each do |v|
           #       p = v.position
@@ -2211,6 +2296,10 @@ module UNES
         @@model = Sketchup.active_model
         @@timestamp = Time.now
         @@scale = 1.0
+        @@unit = 'Custom'
+        @@offset_x = 0.0
+        @@offset_y = 0.0
+        @@offset_z = 0.0
         @@poly_count = 0
         @@display_bb = 'No'
         @@name = @@timestamp.strftime('%Y%m%d%H%M%S')
@@ -2229,29 +2318,58 @@ module UNES
         #        UI.messagebox(@@basename)
         puts 'Parsing XML File ...'
         indoorgml_import_get_data
-        prompts = ['Name: ', 'Scale: ', 'Display BB: ']
-        defaults = [@@name, @@scale, 'No']
-        list = ['', '', 'No|Yes']
+        prompts = ['Name: ', 'Scale: ','Unit:', 'Offset X: ' , 'Offset Y: ' , 'Offset Z: ', 'Display BB: ']
+        defaults = [@@name, @@scale, @@unit , @offset_x, @offset_y, @offset_z, 'No']
+        list = ['', '', 'Custom|Meter|Centimeter|Milimeter|Inch|Feet', '', '', '', 'No|Yes']
         input = UI.inputbox prompts, defaults, list, 'Enter Import Parameters:'
         @@name = input[0]
         @@scale = input[1].to_f
-        @@display_bb = input[2]
+        @@unit = input[2]
+        @@offset_x = input[3].to_f
+        @@offset_y = input[4].to_f
+        @@offset_z = input[5].to_f
+        @@display_bb = input[6]
+
+        if @@unit == 'Meter'
+          @@scale = 39.37
+        elsif @@unit == 'Centimeter'
+          @@scale = 1/2.54
+        elsif @@unit == 'Milimeter'
+          @@scale = 1/25.4
+        elsif @@unit == 'Inch'
+          @@scale = 1
+        elsif @@unit == 'Feet'
+          @@unit == 12
+        end
+
+
+        puts @@offset_x
+        puts @@offset_y
+        puts @@offset_z
+        puts @@scale
       end
 
       # IMPORT INDOORGML version 1 ------------------------------------------------------------
       def import_indoor_gml_geometry_ver1
+        counter = 0
         #        @@model.start_operation("Import IndoorGml File",true)
         if @@xmldoc.elements['.//CellSpace'].nil? && !@@xmldoc.elements['.//core:CellSpace'].nil?
           @@xmldoc.elements.each('.//core:CellSpace') do |csg|
             process_cell_space_ver1 csg
+            counter += 1
+            puts counter
           end
         elsif !@@xmldoc.elements['.//core:cellSpaceMember'].nil?
           @@xmldoc.elements.each('.//core:cellSpaceMember') do |csg|
             process_cell_space_ver1 csg
+            counter += 1
+            puts counter
           end
         else
           @@xmldoc.elements.each('.//CellSpace') do |csg|
             process_cell_space_ver1 csg
+            counter += 1
+            puts counter
           end
         end
       end
@@ -2262,15 +2380,17 @@ module UNES
         type_name = csg.attributes['gml:type']
 
         group = @@model.entities.add_group
-        group.name = "cell_group"
+        group.name = 'cell_group'
         group.name = id unless id.nil?
+        group.name = name unless name.nil?
 
         csg.elements.each('.//gml:LinearRing') do |csm|
           pts = []
           csm.elements.each('.//gml:pos') do |ps|
             values = ps.text.split(' ')
             if values.length == 3
-              pts.push(Geom::Point3d.new(values[0].to_f * @@scale, values[1].to_f * @@scale, values[2].to_f * @@scale))
+              # pts.push(Geom::Point3d.new(values[0].to_f * @@scale, values[1].to_f * @@scale, values[2].to_f * @@scale))
+              pts.push(Geom::Point3d.new((values[0].to_f- @@offset_x)* @@scale, (values[1].to_f - @@offset_y)* @@scale, (values[2].to_f - @@offset_z) * @@scale))
             end
           end
 
@@ -2286,7 +2406,7 @@ module UNES
 
         return if group.nil?
 
-        group.material = Color.new('red')
+        group.material = Sketchup::Color.new('red')
         group.material.alpha = 0.3
 
         if group.name.include? "Door_Base"
@@ -2365,7 +2485,7 @@ module UNES
 
         return if group.nil?
 
-        group.material = Color.new('red')
+        group.material = Sketchup::Color.new('red')
         group.material.alpha = 0.3
 
         if group.name.include? "Door_Base"
@@ -2381,7 +2501,7 @@ module UNES
         file = @@basename + '.gml'
         #        UI.messagebox
         xmlfile = File.new(file)
-        @@xmldoc = Document.new(xmlfile)
+        @@xmldoc = REXML::Document.new(xmlfile)
       end
     end # class << self
 
@@ -2401,7 +2521,7 @@ module UNES
 
     item_create_cell = create_step('cell_space', 'Create Cell Space') do
       # entity = Sketchup.active_model.selection.first
-      # if entity.is_a?(Face)
+      # if entity.is_a?(Sketchup::Face)
       #     create_cell(entity)
       # end
       self.edit_mode = EditMode::CELL
@@ -2424,6 +2544,10 @@ module UNES
       show_dialog
     end
     toolbar.add_item(item_create_poi)
+
+    
+
+
 
     # item_create_door = create_step('door', 'Create Door') do
     #   # entity = Sketchup.active_model.selection.first
@@ -2498,6 +2622,13 @@ module UNES
       create_all
     end
     toolbar.add_item(item_create_all)
+
+    item_create_validation = create_step('validate', 'Validate model') do
+      # entity = Sketchup.active_model.selection.first
+      self.edit_mode = EditMode::VALIDATION
+      show_dialog
+    end
+    toolbar.add_item(item_create_validation)
 
     # item_floor = create_step('floor2', 'Manage floor') do
     #   self.edit_mode = EditMode::FLOOR

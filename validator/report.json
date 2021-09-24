@@ -1,0 +1,59 @@
+{
+  "all_errors": [
+    302
+  ],
+  "dataset_errors": [],
+  "features": [
+    {
+      "errors": [],
+      "id": "none",
+      "primitives": [
+        {
+          "errors": [
+            {
+              "code": 302,
+              "description": "SHELL_NOT_CLOSED",
+              "id": "",
+              "info": "Location hole: (47.2502, 140.087, 0)",
+              "type": "Error"
+            }
+          ],
+          "id": "solid_cell_0",
+          "numberfaces": 5,
+          "numbershells": 1,
+          "numbervertices": 8,
+          "type": "Solid",
+          "validity": false
+        }
+      ],
+      "type": "GenericObject",
+      "validity": false
+    }
+  ],
+  "features_overview": [
+    {
+      "total": 1,
+      "type": "GenericObject",
+      "valid": 0
+    }
+  ],
+  "input_file": "C:/Users/apple/AppData/Roaming/SketchUp/SketchUp 2017/SketchUp/Plugins/validator/temp.gml",
+  "input_file_type": "GML",
+  "parameters": {
+    "overlap_tol": -1.0,
+    "planarity_d2p_tol": 0.01,
+    "planarity_n_tol": 20.0,
+    "snap_tol": 0.001
+  },
+  "primitives_overview": [
+    {
+      "total": 1,
+      "type": "Solid",
+      "valid": 0
+    }
+  ],
+  "time": "Mon Jun 14 08:59:37 2021 대한민국 표준시",
+  "type": "val3dity_report",
+  "val3dity_version": "2.2.0",
+  "validity": false
+}
