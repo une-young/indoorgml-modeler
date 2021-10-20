@@ -55,7 +55,7 @@ module UNES
       attr_reader :anchor
       attr_writer :anchor
 
-      @@node_type_names = %w[NONE DOOR WINDOW ROOM]
+      # @@node_type_names = %w[NONE DOOR WINDOW ROOM]
 
       def initialize
         super
@@ -2377,12 +2377,38 @@ module UNES
       def process_cell_space_ver1 csg
         id = csg.attributes['gml:id']
         name = csg.attributes['gml:name']
-        type_name = csg.attributes['gml:type']
+        type_name = csg.attributes['gml:type']        
 
         group = @@model.entities.add_group
         group.name = 'cell_group'
         group.name = id unless id.nil?
         group.name = name unless name.nil?
+
+        csg.elements.each('.//navi:TransitionSpace') do |tss|
+          tss.elements.each('.//gml:description') do |des|
+            if des.text.include? '=stair'
+              type_name = 'STAIR'
+            elsif des.text.include? '=door'
+              type_name = 'DOOR'
+            elsif des.text.include? '=room'
+              type_name = 'ROOM'
+            end
+          end
+        end
+
+        csg.elements.each('.//navi:GeneralSpace') do |tss|
+          tss.elements.each('.//gml:description') do |des|
+            if des.text.include? '=stair'
+              type_name = 'STAIR'
+            elsif des.text.include? '=door'
+              type_name = 'DOOR'
+            elsif des.text.include? '=room'
+              type_name = 'ROOM'
+            end
+          end
+        end
+
+        puts "type name: #{type_name}"
 
         csg.elements.each('.//gml:LinearRing') do |csm|
           pts = []
@@ -2409,9 +2435,11 @@ module UNES
         group.material = Sketchup::Color.new('red')
         group.material.alpha = 0.3
 
-        if group.name.include? "Door_Base"
+        if type_name == 'DOOR'
           create_door(group)
-        elsif group.name.include? "door_"
+        elsif group.name.include? 'Door_Base'
+          create_door(group)
+        elsif group.name.include? 'door_'
           create_door(group)
         else
           cell = create_cell(group)
